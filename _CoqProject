@@ -1,7 +1,8 @@
--R ParDB ParDB
+-R . Top
 ParDB/Inst.v
 ParDB/Lemmas.v
 ParDB/Spec.v
 ParDB/Tactics.v
 ParDB/WellScoping.v
 FOmegaC/SpecSyntax.v
+FOmegaC/SpecTyping.v

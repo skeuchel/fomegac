@@ -1,4 +1,5 @@
 Require Export ParDB.Spec.
+Require Export ParDB.Lemmas.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Export Coq.Program.Equality.
 Require Export Coq.Program.Tactics.

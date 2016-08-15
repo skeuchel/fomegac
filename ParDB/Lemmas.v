@@ -117,6 +117,10 @@ Section Lemmas.
       (⌈ξ⌉ >=> ζ)↑ = ⌈ξ↑⌉ >=> ζ↑.
     Proof. extensionality i; destruct i; crush. Qed.
 
+    Lemma liftSub_snoc (ζ: Sub Ix) x :
+      @liftSub Ix _ X _ _(ζ · x) = ⌈ζ⌉ · vr x.
+    Proof. extensionality i; destruct i; crush. Qed.
+
   End Indices.
 
   Section Weakening.

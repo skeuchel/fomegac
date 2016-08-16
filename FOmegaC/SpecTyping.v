@@ -101,9 +101,6 @@ Reserved Notation "⟨ Γ ⊢ γ : τ1 ~ τ2 ∷ k ⟩"
     k at level 98).
 
 Inductive Co (Γ: Env) : Exp → Exp → Exp → Kind → Prop :=
-  | CoTyVar {α k} :
-      ⟨ α ∷ k ∈ Γ ⟩ →
-      ⟨ Γ ⊢ var α : var α ~ var α ∷ k ⟩
   | CoVar {c τ1 τ2 k} :
       ⟨ c : τ1 ~ τ2 ∷ k ∈ Γ ⟩ →
       ⟨ Γ ⊢ var c : τ1 ~ τ2 ∷ k ⟩
@@ -117,7 +114,7 @@ Inductive Co (Γ: Env) : Exp → Exp → Exp → Kind → Prop :=
   | CoArr {γ1 γ2 τ11 τ12 τ21 τ22}:
       ⟨ Γ ⊢ γ1 : τ11 ~ τ21 ∷ kstar ⟩ →
       ⟨ Γ ⊢ γ2 : τ12 ~ τ22 ∷ kstar ⟩ →
-      ⟨ Γ ⊢ coarr γ1 γ2 : arr τ11 τ21 ~ arr τ21 τ22 ∷ kstar ⟩
+      ⟨ Γ ⊢ coarr γ1 γ2 : arr τ11 τ12 ~ arr τ21 τ22 ∷ kstar ⟩
   | CoArrτ {γ τ1 τ2 k} :
       ⟨ Γ ► k ⊢ γ : τ1 ~ τ2 ∷ kstar ⟩ →
       ⟨ Γ ⊢ coarrτ k γ : arrτ k τ1 ~ arrτ k τ2 ∷ kstar ⟩
@@ -128,6 +125,9 @@ Inductive Co (Γ: Env) : Exp → Exp → Exp → Kind → Prop :=
       ⟨ Γ ► k1 ⊢ γ1 : τ11 ~ τ21 ∷ k2 ⟩ →
       ⟨ Γ ⊢ γ2 : τ12 ~ τ22 ∷ k1 ⟩ →
       ⟨ Γ ⊢ cobeta γ1 γ2 : τapp (τabs k1 τ11) τ12 ~ τ21[beta1 τ22] ∷ k2 ⟩
+  | CoRefl {τ k} :
+      ⟨ Γ ⊢ τ ∷ k ⟩ →
+      ⟨ Γ ⊢ corefl τ : τ ~ τ ∷ k ⟩
   | CoSym {γ τ1 τ2 k} :
       ⟨ Γ ⊢ γ : τ1 ~ τ2 ∷ k ⟩ →
       ⟨ Γ ⊢ cosym γ : τ2 ~ τ1 ∷ k ⟩

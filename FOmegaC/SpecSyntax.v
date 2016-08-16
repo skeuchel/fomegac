@@ -26,6 +26,7 @@ Inductive Exp : Type :=
   | coarrτ   k (γ: Exp)
   | coarrγ   (τ1 τ2: Exp) k (γ: Exp)
   | cobeta   (γ1 γ2: Exp)
+  | corefl   (τ: Exp)
   | cosym    (γ: Exp)
   | cotrans  (γ1 γ2: Exp)
   (**********************)
@@ -39,27 +40,26 @@ Inductive Exp : Type :=
 
 Implicit Types e s τ γ : Exp.
 
-Inductive Env : Set :=
-  | nil
-  | tmvar (Γ: Env) τ
-  | tyvar (Γ: Env) k
-  | covar (Γ: Env) τ1 τ2 k.
+(* Inductive Env : Set := *)
+(*   | nil *)
+(*   | tmvar (Γ: Env) τ *)
+(*   | tyvar (Γ: Env) k *)
+(*   | covar (Γ: Env) τ1 τ2 k. *)
 
-(* Inductive Binding : Type := *)
-(*   | tmvar τ *)
-(*   | tyvar k *)
-(*   | covar τ1 τ2 k. *)
+Inductive Binding : Type :=
+  | tyvar k
+  | covar τ1 τ2 k
+  | tmvar τ.
 
-(* Definition Env : Type := list Binding. *)
-
+Definition Env : Type := list Binding.
 Implicit Types Γ : Env.
 
-Notation "Γ ▻ τ"           := (tmvar Γ τ) (at level 55, left associativity).
-Notation "Γ ► k"           := (tyvar Γ k) (at level 55, left associativity).
-Notation "Γ ◅ τ1 ~ τ2 ∷ k" := (covar Γ τ1 τ2 k) (at level 55, left associativity).
-(* Notation "Γ ▻ τ"           := (cons (tmvar τ) Γ) (at level 55, left associativity). *)
-(* Notation "Γ ► k"           := (cons (tyvar k) Γ) (at level 55, left associativity). *)
-(* Notation "Γ ◅ τ1 ~ τ2 ∷ k" := (cons (covar τ1 τ2 k) Γ) (at level 55, left associativity). *)
+(* Notation "Γ ▻ τ"           := (tmvar Γ τ) (at level 55, left associativity). *)
+(* Notation "Γ ► k"           := (tyvar Γ k) (at level 55, left associativity). *)
+(* Notation "Γ ◅ τ1 ~ τ2 ∷ k" := (covar Γ τ1 τ2 k) (at level 55, left associativity). *)
+Notation "Γ ▻ τ"           := (cons (tmvar τ) Γ) (at level 55, left associativity).
+Notation "Γ ► k"           := (cons (tyvar k) Γ) (at level 55, left associativity).
+Notation "Γ ◅ τ1 ~ τ2 ∷ k" := (cons (covar τ1 τ2 k) Γ) (at level 55, left associativity).
 
 Section DeBruijn.
 
@@ -85,6 +85,7 @@ Section DeBruijn.
       | coarrτ k γ       =>  coarrτ k γ[ζ↑]
       | coarrγ τ1 τ2 k γ =>  coarrγ τ1[ζ] τ2[ζ] k γ[ζ]
       | cobeta γ1 γ2     =>  cobeta γ1[ζ↑] γ2[ζ]
+      | corefl τ         =>  corefl τ[ζ]
       | cosym γ          =>  cosym γ[ζ]
       | cotrans γ1 γ2    =>  cotrans γ1[ζ] γ2[ζ]
       (**************************************************************)
@@ -98,13 +99,12 @@ Section DeBruijn.
     end
   where "t '[' ζ ']'" := (apExp ζ t).
 
-  (* Fixpoint apBinding (ζ: Sub X) (b: Binding) {struct b} : Binding := *)
-  (*   match b with *)
-  (*     | tmvar τ       => tmvar τ[ζ] *)
-  (*     | tyvar k       => tyvar k *)
-  (*     | covar τ1 τ2 k => covar τ1[ζ] τ2[ζ] k *)
-  (*   end *)
-  (* where "t '[' ζ ']'" := (apExp ζ t). *)
+  Definition apBinding (ζ: Sub X) (b: Binding) : Binding :=
+    match b with
+      | tmvar τ       => tmvar τ[ζ]
+      | tyvar k       => tyvar k
+      | covar τ1 τ2 k => covar τ1[ζ] τ2[ζ] k
+    end.
 
 End DeBruijn.
 
@@ -129,9 +129,10 @@ Local Ltac crush :=
     (cbn;
      repeat crushDbSyntaxMatchH;
      repeat crushDbLemmasMatchH;
-     rewrite ?comp_up, ?up_liftSub, ?up_comp_lift;
-     repeat crushSyntaxRefold);
-  auto.
+     rewrite ?ap_comp, ?comp_up, ?up_liftSub, ?up_comp_lift;
+     repeat crushSyntaxRefold;
+     eauto;
+     idtac).
 
 Local Ltac derive :=
   crush; f_equal; crush.
@@ -182,17 +183,30 @@ Module ExpKit <: Kit.
 
 End ExpKit.
 
-(* Section ApplicationBinding. *)
+Section ApplicationBinding.
 
-(*   Context {X: Type}. *)
-(*   Context {vrX : Vr X}. *)
-(*   Context {wkX: Wk X}. *)
-(*   Context {liftXUExp: Lift X Exp}. *)
+  Context {X: Type}.
+  Context {vrX : Vr X}.
+  Context {wkX: Wk X}.
+  Context {liftXUExp: Lift X Exp}.
 
-(*   Global Instance ApBinding : Ap Binding X := {| ap := apBinding |}. *)
-(*   Proof. induction x; crush. Qed. *)
+  Global Instance ApBinding : Ap Binding X := {| ap := apBinding |}.
+  Proof. induction x; crush. Defined.
 
-(* End ApplicationBinding. *)
+End ApplicationBinding.
+
+Section LemmasBinding.
+
+  Context {X Y: Type}.
+  Context {vrX : Vr X} {wkX: Wk X} {liftXUExp: Lift X Exp}.
+  Context {vrY : Vr Y} {wkY: Wk Y} {liftYUExp: Lift Y Exp}.
+  Context {apXY : Ap X Y}.
+  Context {apCompExpXY: LemApComp Exp X Y}.
+
+  Global Instance LemApCompBinding : LemApComp Binding X Y := {}.
+  Proof. destruct x; crush. Qed.
+
+End LemmasBinding.
 
 Module InstExp := Inst ExpKit.
 Export InstExp. (* Export for shorter names. *)

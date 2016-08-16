@@ -276,14 +276,14 @@ Section Beta.
 End Beta.
 
 Class Ws (T: Type) := ws: Dom → T → Prop.
-Notation "⟨  γ ⊢ t  ⟩" := (ws γ t) (at level 0, γ at level 99, t at level 99).
+Notation "⟨  γ ⊢ t  ⟩" := (ws γ t) (at level 0, γ at level 98, t at level 98).
 
 Instance WsIx : Ws Ix := { ws := wsIx }.
 
 Definition WsSub {X} {wsX: Ws X} (γ δ: Dom) (ξ: Sub X) : Prop :=
   ∀ (i: Ix), γ ∋ i → ⟨ δ ⊢ ξ i ⟩.
 Notation "⟨ ξ : γ => δ ⟩" := (WsSub γ δ ξ)
- (at level 0, ξ at level 99, γ at level 99, δ at level 99).
+ (at level 0, ξ at level 98, γ at level 98, δ at level 98).
 
 Section BasicLemmas.
 

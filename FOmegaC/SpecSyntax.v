@@ -11,128 +11,152 @@ Inductive Kind : Type :=
 
 Implicit Types k : Kind.
 
-Inductive Tm : Type :=
+Inductive Exp : Type :=
   | var      x
   (**********************)
-  | absee    (τ e: Tm)
-  | absτe    k (e: Tm)
-  | absγe    (τ1 τ2: Tm) k (e : Tm)
-  | appee    (e1 e2 : Tm)
-  | appeτ    (e τ: Tm)
-  | appeγ    (e γ: Tm)
-  | cast     (e γ: Tm)
+  | τabs     k (τ: Exp)
+  | τapp     (τ1 τ2: Exp)
+  | arr      (τ1 τ2: Exp)
+  | arrτ     k (τ: Exp)
+  | arrγ     (τ1 τ2: Exp) k (τ3: Exp)
   (**********************)
-  | absττ    k (τ: Tm)
-  | appττ    (τ1 τ2: Tm)
-  | arree    (τ1 τ2: Tm)
-  | arrτe    k (τ: Tm)
-  | arrγe    (τ1 τ2: Tm) k (τ3: Tm)
+  | coτabs   k (γ: Exp)
+  | coτapp   (γ1 γ2: Exp)
+  | coarr    (γ1 γ2: Exp)
+  | coarrτ   k (γ: Exp)
+  | coarrγ   (τ1 τ2: Exp) k (γ: Exp)
+  | cobeta   (γ1 γ2: Exp)
+  | cosym    (γ: Exp)
+  | cotrans  (γ1 γ2: Exp)
   (**********************)
-  | γabsττ   k (γ: Tm)
-  | γappττ   (γ1 γ2: Tm)
-  | γarree   (γ1 γ2: Tm)
-  | γarrτe   k (γ: Tm)
-  | γarrγe   (τ1 τ2 γ: Tm)
-  | γbeta    (γ1 γ2: Tm)
-  | γsym     (γ: Tm)
-  | γtrans   (γ1 γ2: Tm).
+  | abs      (τ s: Exp)
+  | absτ     k (s: Exp)
+  | absγ     (τ1 τ2: Exp) k (s : Exp)
+  | app      (s1 s2 : Exp)
+  | appτ     (s τ: Exp)
+  | appγ     (s γ: Exp)
+  | cast     (s γ: Exp).
 
-Implicit Types t e τ γ : Tm.
+Implicit Types e s τ γ : Exp.
 
 Inductive Env : Set :=
   | nil
-  | evar (Γ: Env) τ
-  | τvar (Γ: Env) k
-  | γvar (Γ: Env) τ1 τ2 k.
+  | tmvar (Γ: Env) τ
+  | tyvar (Γ: Env) k
+  | covar (Γ: Env) τ1 τ2 k.
+
+(* Inductive Binding : Type := *)
+(*   | tmvar τ *)
+(*   | tyvar k *)
+(*   | covar τ1 τ2 k. *)
+
+(* Definition Env : Type := list Binding. *)
 
 Implicit Types Γ : Env.
 
-Notation "Γ ▻ τ"           := (evar Γ τ) (at level 55, left associativity).
-Notation "Γ ► k"           := (τvar Γ k) (at level 55, left associativity).
-Notation "Γ ◅ τ1 ~ τ2 ∷ k" := (γvar Γ τ1 τ2 k) (at level 55, left associativity).
+Notation "Γ ▻ τ"           := (tmvar Γ τ) (at level 55, left associativity).
+Notation "Γ ► k"           := (tyvar Γ k) (at level 55, left associativity).
+Notation "Γ ◅ τ1 ~ τ2 ∷ k" := (covar Γ τ1 τ2 k) (at level 55, left associativity).
+(* Notation "Γ ▻ τ"           := (cons (tmvar τ) Γ) (at level 55, left associativity). *)
+(* Notation "Γ ► k"           := (cons (tyvar k) Γ) (at level 55, left associativity). *)
+(* Notation "Γ ◅ τ1 ~ τ2 ∷ k" := (cons (covar τ1 τ2 k) Γ) (at level 55, left associativity). *)
 
 Section DeBruijn.
 
   Context {X: Type}.
   Context {vrX: Vr X}.
   Context {wkX: Wk X}.
-  Context {vrTm: Vr Tm}.
-  Context {liftXTm: Lift X Tm}.
+  Context {vrExp: Vr Exp}.
+  Context {liftXExp: Lift X Exp}.
 
-  Fixpoint apTm (ζ: Sub X) (t: Tm) {struct t} : Tm :=
-    match t with
+  Fixpoint apExp (ζ: Sub X) (e: Exp) {struct e} : Exp :=
+    match e with
       | var x            =>  lift (ζ x)
       (**************************************************************)
-      | absee τ e        =>  absee τ[ζ] e[ζ↑]
-      | absτe k e        =>  absτe k e[ζ↑]
-      | absγe τ1 τ2 k e  =>  absγe τ1[ζ] τ2[ζ] k e[ζ↑]
-      | appee e1 e2      =>  appee e1[ζ] e2[ζ]
-      | appeτ e τ        =>  appeτ e[ζ] τ[ζ]
-      | appeγ e γ        =>  appeγ e[ζ] γ[ζ]
-      | cast e γ         =>  cast e[ζ] γ[ζ]
+      | τabs k τ         =>  τabs k τ[ζ↑]
+      | τapp τ1 τ2       =>  τapp τ1[ζ] τ2[ζ]
+      | arr  τ1 τ2       =>  arr  τ1[ζ] τ2[ζ]
+      | arrτ k τ         =>  arrτ k τ[ζ↑]
+      | arrγ τ1 τ2 k τ3  =>  arrγ τ1[ζ] τ2[ζ] k τ3[ζ]
       (**************************************************************)
-      | absττ k τ        =>  absττ k τ[ζ↑]
-      | appττ τ1 τ2      =>  appττ τ1[ζ] τ2[ζ]
-      | arree τ1 τ2      =>  arree τ1[ζ] τ2[ζ]
-      | arrτe k τ        =>  arrτe k τ[ζ↑]
-      | arrγe τ1 τ2 k τ3 =>  arrγe τ1[ζ] τ2[ζ] k τ3[ζ↑]
+      | coτabs k γ       =>  coτabs k γ[ζ↑]
+      | coτapp γ1 γ2     =>  coτapp γ1[ζ] γ2[ζ]
+      | coarr γ1 γ2      =>  coarr γ1[ζ] γ2[ζ]
+      | coarrτ k γ       =>  coarrτ k γ[ζ↑]
+      | coarrγ τ1 τ2 k γ =>  coarrγ τ1[ζ] τ2[ζ] k γ[ζ]
+      | cobeta γ1 γ2     =>  cobeta γ1[ζ↑] γ2[ζ]
+      | cosym γ          =>  cosym γ[ζ]
+      | cotrans γ1 γ2    =>  cotrans γ1[ζ] γ2[ζ]
       (**************************************************************)
-      | γabsττ k γ       =>  γabsττ k γ[ζ↑]
-      | γappττ γ1 γ2     =>  γappττ γ1[ζ] γ2[ζ]
-      | γarree γ1 γ2     =>  γarree γ1[ζ] γ2[ζ]
-      | γarrτe k γ       =>  γarrτe k γ[ζ↑]
-      | γarrγe τ1 τ2 γ   =>  γarrγe τ1[ζ] τ2[ζ] γ[ζ↑]
-      | γbeta γ1 γ2      =>  γbeta γ1[ζ] γ2[ζ]
-      | γsym γ           =>  γsym γ[ζ]
-      | γtrans γ1 γ2     =>  γtrans γ1[ζ] γ2[ζ]
+      | abs  τ s         =>  abs  τ[ζ] s[ζ↑]
+      | absτ k s         =>  absτ k s[ζ↑]
+      | absγ τ1 τ2 k s   =>  absγ τ1[ζ] τ2[ζ] k s[ζ↑]
+      | app  s1 s2       =>  app  s1[ζ] s2[ζ]
+      | appτ s τ         =>  appτ s[ζ] τ[ζ]
+      | appγ s γ         =>  appγ s[ζ] γ[ζ]
+      | cast s γ         =>  cast s[ζ] γ[ζ]
     end
-  where "t '[' ζ ']'" := (apTm ζ t).
+  where "t '[' ζ ']'" := (apExp ζ t).
+
+  (* Fixpoint apBinding (ζ: Sub X) (b: Binding) {struct b} : Binding := *)
+  (*   match b with *)
+  (*     | tmvar τ       => tmvar τ[ζ] *)
+  (*     | tyvar k       => tyvar k *)
+  (*     | covar τ1 τ2 k => covar τ1[ζ] τ2[ζ] k *)
+  (*   end *)
+  (* where "t '[' ζ ']'" := (apExp ζ t). *)
 
 End DeBruijn.
 
-Instance vrTm : Vr Tm := {| vr := var |}.
+Instance vrExp : Vr Exp := {| vr := var |}.
 Proof. inversion 1; auto. Defined.
 
-Module TmKit <: Kit.
+Ltac crushSyntaxRefold :=
+  match goal with
+    | [ H: context[apExp ?ζ ?e] |- _ ] =>
+      change (apExp ζ e) with e[ζ] in H
+    | [ |- context[apExp ?ζ ?e] ] =>
+      change (apExp ζ e) with e[ζ]
+    (* | [ H: context[apBinding ?ζ ?b] |- _ ] => *)
+    (*   change (apBinding ζ b) with b[ζ] in H *)
+    (* | [ |- context[apBinding ?ζ ?b] ] => *)
+    (*   change (apBinding ζ b) with b[ζ] *)
+  end.
 
-  Definition TM := Tm.
-  Definition inst_vr := vrTm.
+Local Ltac crush :=
+  intros; cbn in * |-;
+  repeat
+    (cbn;
+     repeat crushDbSyntaxMatchH;
+     repeat crushDbLemmasMatchH;
+     rewrite ?comp_up, ?up_liftSub, ?up_comp_lift;
+     repeat crushSyntaxRefold);
+  auto.
 
-  Local Ltac refold :=
-    match goal with
-      | [ |- context[apTm ?ξ ?t] ] =>
-        change (apTm ξ t) with t[ξ]
-    end.
+Local Ltac derive :=
+  crush; f_equal; crush.
 
-  Local Ltac crush :=
-    intros; cbn in * |-;
-    repeat
-      (cbn;
-       repeat crushDbSyntaxMatchH;
-       repeat crushDbLemmasMatchH;
-       rewrite ?comp_up, ?up_liftSub, ?up_comp_lift;
-       repeat refold);
-    auto.
+Module ExpKit <: Kit.
 
-  Local Ltac derive :=
-    crush; f_equal; crush.
+  Definition TM := Exp.
+  Definition inst_vr := vrExp.
 
   Section Application.
 
     Context {Y: Type}.
     Context {vrY : Vr Y}.
     Context {wkY: Wk Y}.
-    Context {liftY: Lift Y Tm}.
+    Context {liftY: Lift Y Exp}.
 
-    Global Instance inst_ap : Ap Tm Y := {| ap := apTm |}.
+    Global Instance inst_ap : Ap Exp Y := {| ap := apExp |}.
     Proof. induction x; derive. Defined.
 
-    Global Instance inst_ap_vr : LemApVr Tm Y := {}.
+    Global Instance inst_ap_vr : LemApVr Exp Y := {}.
     Proof. reflexivity. Qed.
 
   End Application.
 
-  Instance inst_ap_inj: LemApInj Tm Ix := {}.
+  Instance inst_ap_inj: LemApInj Exp Ix := {}.
   Proof.
     intros m Inj_m x. revert m Inj_m.
     induction x; destruct y; simpl; try discriminate;
@@ -140,23 +164,35 @@ Module TmKit <: Kit.
   Qed.
 
   Instance inst_ap_comp (Y Z: Type)
-    {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y Tm}
-    {vrZ: Vr Z} {wkZ: Wk Z} {liftZ: Lift Z Tm}
+    {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y Exp}
+    {vrZ: Vr Z} {wkZ: Wk Z} {liftZ: Lift Z Exp}
     {apYZ: Ap Y Z} {compUpYZ: LemCompUp Y Z}
-    {apLiftYTmZ: LemApLift Y Z Tm} :
-    LemApComp Tm Y Z := {}.
+    {apLiftYExpZ: LemApLift Y Z Exp} :
+    LemApComp Exp Y Z := {}.
   Proof. induction x; derive. Qed.
 
   Instance inst_ap_liftSub (Y: Type)
-    {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y Tm} :
-    LemApLiftSub Tm Y := {}.
+    {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y Exp} :
+    LemApLiftSub Exp Y := {}.
   Proof. induction t; derive. Qed.
 
-  Lemma inst_ap_ixComp (t: Tm) :
-    ∀ (ξ: Sub Ix) (ζ: Sub Tm), t[ξ][ζ] = t[⌈ξ⌉ >=> ζ].
+  Lemma inst_ap_ixComp (t: Exp) :
+    ∀ (ξ: Sub Ix) (ζ: Sub Exp), t[ξ][ζ] = t[⌈ξ⌉ >=> ζ].
   Proof. induction t; derive. Qed.
 
-End TmKit.
+End ExpKit.
 
-Module InstTm := Inst TmKit.
-Export InstTm. (* Export for shorter names. *)
+(* Section ApplicationBinding. *)
+
+(*   Context {X: Type}. *)
+(*   Context {vrX : Vr X}. *)
+(*   Context {wkX: Wk X}. *)
+(*   Context {liftXUExp: Lift X Exp}. *)
+
+(*   Global Instance ApBinding : Ap Binding X := {| ap := apBinding |}. *)
+(*   Proof. induction x; crush. Qed. *)
+
+(* End ApplicationBinding. *)
+
+Module InstExp := Inst ExpKit.
+Export InstExp. (* Export for shorter names. *)

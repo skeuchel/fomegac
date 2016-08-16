@@ -6,3 +6,4 @@ ParDB/Tactics.v
 ParDB/WellScoping.v
 FOmegaC/SpecSyntax.v
 FOmegaC/SpecTyping.v
+FOmegaC/LemmasTyping.v

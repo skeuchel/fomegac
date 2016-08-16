@@ -121,6 +121,15 @@ Section Lemmas.
       @liftSub Ix _ X _ _(ζ · x) = ⌈ζ⌉ · vr x.
     Proof. extensionality i; destruct i; crush. Qed.
 
+    Context {apXIx : Ap X Ix}.
+    Context {apLiftSubstXIx: LemApLiftSub X X}.
+
+    Lemma ap_wkm_ix x :
+      x[@wkm Ix _ _] = x[@wkm X _ _].
+    Proof.
+      now rewrite <- ap_liftSub, liftSub_wkm.
+    Qed.
+
   End Indices.
 
   Section Weakening.

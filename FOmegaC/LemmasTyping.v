@@ -7,37 +7,48 @@ Require Export SpecTyping.
 
 Require  Coq.Setoids.Setoid.
 
+Arguments wkm _ {_ _} _.
+Arguments comp _ _ {_ _ } _ _ _.
+
 Record WtRen (Γ Δ: Env) (ζ: Sub Ix) : Prop :=
-  { wtr_evar : ∀ {x τ},
-                 ⟨ x : τ ∈ Γ ⟩ →
-                 ⟨ ζ x : τ[ζ] ∈ Δ ⟩;
-    wtr_tvar : ∀ {α k},
-                 ⟨ α ∷ k ∈ Γ ⟩ →
-                 ⟨ ζ α ∷ k ∈ Δ ⟩;
-    wtr_cvar : ∀ {c τ1 τ2 k},
-                 ⟨ c : τ1 ~ τ2 ∷ k ∈ Γ ⟩ →
-                 ⟨ ζ c : τ1[ζ] ~ τ2[ζ] ∷ k ∈ Δ ⟩
+  { wtr_tyvar : ∀ {α k},
+                  ⟨ α ∷ k ∈ Γ ⟩ →
+                  ⟨ ζ α ∷ k ∈ Δ ⟩;
+    wtr_covar : ∀ {c τ1 τ2 k},
+                  ⟨ c : τ1 ~ τ2 ∷ k ∈ Γ ⟩ →
+                  ⟨ ζ c : τ1[ζ] ~ τ2[ζ] ∷ k ∈ Δ ⟩;
+    wtr_tmvar : ∀ {x τ},
+                  ⟨ x : τ ∈ Γ ⟩ →
+                  ⟨ ζ x : τ[ζ] ∈ Δ ⟩
   }.
+
 Notation "⟨ ζ : Γ -> Δ ⟩" := (WtRen Γ Δ ζ)
   (at level 0,
    ζ at level 98,
    Γ at level 98,
    Δ at level 98).
 
-Arguments wtr_evar {_ _ _} _ {_ _} _.
-Arguments wtr_tvar {_ _ _} _ {_ _} _.
-Arguments wtr_cvar {_ _ _} _ {_ _ _ _} _.
+Arguments wtr_tyvar {_ _ _} _ {_ _} _.
+Arguments wtr_covar {_ _ _} _ {_ _ _ _} _.
+Arguments wtr_tmvar {_ _ _} _ {_ _} _.
 
-Record WtSub (Γ Δ: Env) (ζ: Sub Tm) : Prop :=
-  { wts_evar : ∀ {x τ},
-                 ⟨ x : τ ∈ Γ ⟩ →
-                 ⟨ Δ ⊢ ζ x : τ[ζ] ⟩;
-    wts_tvar : ∀ {α k},
-                 ⟨ α ∷ k ∈ Γ ⟩ →
-                 ⟨ Δ ⊢ ζ α ∷ k ⟩;
-    wts_cvar : ∀ {c τ1 τ2 k},
-                 ⟨ c : τ1 ~ τ2 ∷ k ∈ Γ ⟩ →
-                 ⟨ Δ ⊢ ζ c : τ1[ζ] ~ τ2[ζ] ∷ k ⟩
+Hint Constructors Ty : ws.
+Hint Constructors Co : ws.
+Hint Constructors Tm : ws.
+Hint Resolve wtr_tyvar : ws.
+Hint Resolve wtr_covar : ws.
+Hint Resolve wtr_tmvar : ws.
+
+Record WtSub (Γ Δ: Env) (ζ: Sub Exp) : Prop :=
+  { wts_tyvar : ∀ {α k},
+                  ⟨ α ∷ k ∈ Γ ⟩ →
+                  ⟨ Δ ⊢ ζ α ∷ k ⟩;
+    wts_covar : ∀ {c τ1 τ2 k},
+                  ⟨ c : τ1 ~ τ2 ∷ k ∈ Γ ⟩ →
+                  ⟨ Δ ⊢ ζ c : τ1[ζ] ~ τ2[ζ] ∷ k ⟩;
+    wts_tmvar : ∀ {x τ},
+                  ⟨ x : τ ∈ Γ ⟩ →
+                  ⟨ Δ ⊢ ζ x : τ[ζ] ⟩;
   }.
 Notation "⟨ ζ : Γ => Δ ⟩" := (WtSub Γ Δ ζ).
   (* (at level 0, *)
@@ -119,22 +130,24 @@ Ltac crushTypingMatchH :=
     (* | [ |- ⟪ _ ⊢ fixt _ _ _ : _ ⟫    ] => econstructor *)
   end.
 
-Hint Constructors GetEVar : ws.
-Hint Constructors GetTVar : ws.
-Hint Constructors GetCVar : ws.
+Hint Constructors GetTyVar : ws.
+Hint Constructors GetCoVar : ws.
+Hint Constructors GetTmVar : ws.
 
 Local Ltac crush :=
-  intros; cbn in * |-;
+  intros;
   repeat
-    (cbn;
+    (cbn in *;
      (* repeat crushStlcSyntaxMatchH; *)
      repeat crushDbSyntaxMatchH;
      repeat crushDbLemmasRewriteH;
+     repeat crushSyntaxRefold;
      (* repeat crushTypingMatchH; *)
      subst*;
-     idtac);
-  try discriminate;
-  eauto with core ws.
+     try discriminate;
+     eauto with core ws;
+     idtac
+    ).
 
 Section Renaming.
 
@@ -173,26 +186,19 @@ Section Renaming.
 
   Lemma wtRen_closed {ζ Δ} :
     ⟨ ζ : nil -> Δ ⟩.
-  Proof.
-    constructor; inversion 1.
-  Qed.
+  Proof. constructor; inversion 1. Qed.
   Hint Resolve wtRen_closed : ws.
 
   Lemma wtRen_idm Γ :
     ⟨ idm Ix : Γ -> Γ ⟩.
-  Proof.
-    constructor; crush.
-  Qed.
+  Proof. constructor; crush. Qed.
   Hint Resolve wtRen_idm : ws.
 
   Lemma wtRen_comp {Γ₁ Γ₂ Γ₃ ξ₁ ξ₂} :
     ⟨ ξ₁ : Γ₁ -> Γ₂ ⟩ →
     ⟨ ξ₂ : Γ₂ -> Γ₃ ⟩ →
     ⟨ ξ₁ >=> ξ₂ : Γ₁ -> Γ₃ ⟩.
-  Proof.
-    do 2 inversion 1.
-    constructor; crush.
-  Qed.
+  Proof. constructor; crush. Qed.
   Hint Resolve wtRen_comp : ws.
 
   (*************************************************************************)
@@ -221,33 +227,20 @@ Section Renaming.
   (* Proof. induction Δ; eauto with wsi. Qed. *)
   (* Hint Resolve wtiIx_wkms : wsi. *)
 
+  Lemma wtRen_wkm_tmvar Γ τ :
+    ⟨ wkm Ix : Γ -> Γ ▻ τ ⟩.
+  Proof. constructor; intros; rewrite ?ap_wkm_ix; crush. Qed.
+  Hint Resolve wtRen_wkm_tmvar : ws.
 
-  Lemma wtRen_wkm_evar Γ τ :
-    ⟨ wkm : Γ -> Γ ▻ τ ⟩.
-  Proof.
-    constructor; intros;
-    rewrite <- ?ap_liftSub;
-    crush.
-  Qed.
-  Hint Resolve wtRen_wkm_evar : ws.
+  Lemma wtRen_wkm_tyvar Γ k :
+    ⟨ wkm Ix : Γ -> Γ ► k ⟩.
+  Proof. constructor; intros; rewrite ?ap_wkm_ix; crush. Qed.
+  Hint Resolve wtRen_wkm_tyvar : ws.
 
-  Lemma wtRen_wkm_tvar Γ k :
-    ⟨ wkm : Γ -> Γ ► k ⟩.
-  Proof.
-    constructor; intros;
-    rewrite <- ?ap_liftSub;
-    crush.
-  Qed.
-  Hint Resolve wtRen_wkm_tvar : ws.
-
-  Lemma wtRen_wkm_cvar Γ τ1 τ2 k :
-    ⟨ wkm : Γ -> Γ ◅ τ1 ~ τ2 ∷ k ⟩.
-  Proof.
-    constructor; intros;
-    rewrite <- ?ap_liftSub;
-    crush.
-  Qed.
-  Hint Resolve wtRen_wkm_cvar : ws.
+  Lemma wtRen_wkm_covar Γ τ1 τ2 k :
+    ⟨ wkm Ix : Γ -> Γ ◅ τ1 ~ τ2 ∷ k ⟩.
+  Proof. constructor; intros; rewrite ?ap_wkm_ix; crush. Qed.
+  Hint Resolve wtRen_wkm_covar : ws.
 
   (* Lemma wtiIx_wkm Γ i T : *)
   (*   ⟪ (wkm i) : T ∈ (Γ ▻ T) ⟫ → ⟪ i : T ∈ Γ ⟫. *)
@@ -266,92 +259,35 @@ Section Renaming.
   (* Proof. apply (wtRen_natural (wtRenNatural_wkms_id Δ)). Qed. *)
   (* Hint Resolve wtiRen_comp_wkms : wsi. *)
 
-  Lemma wtRen_snoc_evar {Γ Δ ζ x τ} :
+  Lemma wtRen_snoc_tmvar {Γ Δ ζ x τ} :
     ⟨ ζ : Γ -> Δ ⟩ →
     ⟨ x : τ[ζ] ∈ Δ ⟩ →
     ⟨ ζ · x : Γ ▻ τ -> Δ ⟩.
   Proof.
-    intros wζ wx; constructor; crush.
-    - repeat crushTypingMatchH; crush.
-      + rewrite <- ap_liftSub.
-        rewrite liftSub_snoc.
-        rewrite ap_comp.
-        rewrite wkm_snoc_cancel.
-        rewrite ap_liftSub.
-        assumption.
-      + rewrite <- ap_liftSub.
-        rewrite liftSub_snoc.
-        rewrite ap_comp.
-        rewrite wkm_snoc_cancel.
-        rewrite ap_liftSub.
-        now apply (wtr_evar wζ).
-    - repeat crushTypingMatchH; crush.
-      now apply (wtr_tvar wζ).
-    - repeat crushTypingMatchH; crush.
-      rewrite <- ?ap_liftSub.
-      rewrite ?liftSub_snoc.
-      rewrite ?ap_comp.
-      rewrite ?wkm_snoc_cancel.
-      rewrite ?ap_liftSub.
-      now apply (wtr_cvar wζ).
+    intros wζ wx; constructor; crush; repeat crushTypingMatchH;
+      rewrite <- ?ap_wkm_ix, ?ap_comp, ?wkm_snoc_cancel; crush.
   Qed.
-  Hint Resolve wtRen_snoc_evar : ws.
+  Hint Resolve wtRen_snoc_tmvar : ws.
 
-  Lemma wtRen_snoc_tvar {Γ Δ ζ α k} :
+  Lemma wtRen_snoc_tyvar {Γ Δ ζ α k} :
     ⟨ ζ : Γ -> Δ ⟩ →
     ⟨ α ∷ k ∈ Δ ⟩ →
     ⟨ ζ · α : Γ ► k -> Δ ⟩.
   Proof.
-    intros wζ wα; constructor; crush.
-    - repeat crushTypingMatchH; crush.
-      rewrite <- ap_liftSub.
-      rewrite liftSub_snoc.
-      rewrite ap_comp.
-      rewrite wkm_snoc_cancel.
-      rewrite ap_liftSub.
-      now apply (wtr_evar wζ).
-    - repeat crushTypingMatchH; crush.
-      now apply (wtr_tvar wζ).
-    - repeat crushTypingMatchH; crush.
-      rewrite <- ?ap_liftSub.
-      rewrite ?liftSub_snoc.
-      rewrite ?ap_comp.
-      rewrite ?wkm_snoc_cancel.
-      rewrite ?ap_liftSub.
-      now apply (wtr_cvar wζ).
+    intros wζ wx; constructor; crush; repeat crushTypingMatchH;
+      rewrite <- ?ap_wkm_ix, ?ap_comp, ?wkm_snoc_cancel; crush.
   Qed.
-  Hint Resolve wtRen_snoc_tvar : ws.
+  Hint Resolve wtRen_snoc_tyvar : ws.
 
-  Lemma wtRen_snoc_cvar {Γ Δ ζ c τ1 τ2 k} :
+  Lemma wtRen_snoc_covar {Γ Δ ζ c τ1 τ2 k} :
     ⟨ ζ : Γ -> Δ ⟩ →
     ⟨ c : τ1[ζ] ~ τ2[ζ] ∷ k ∈ Δ ⟩ →
     ⟨ ζ · c : Γ ◅ τ1 ~ τ2 ∷ k -> Δ ⟩.
   Proof.
-    intros wζ wc; constructor; crush.
-    - repeat crushTypingMatchH; crush.
-      rewrite <- ap_liftSub.
-      rewrite liftSub_snoc.
-      rewrite ap_comp.
-      rewrite wkm_snoc_cancel.
-      rewrite ap_liftSub.
-      now apply (wtr_evar wζ).
-    - repeat crushTypingMatchH; crush.
-      now apply (wtr_tvar wζ).
-    - repeat crushTypingMatchH; crush.
-      + rewrite <- ?ap_liftSub.
-        rewrite ?liftSub_snoc.
-        rewrite ?ap_comp.
-        rewrite ?wkm_snoc_cancel.
-        rewrite ?ap_liftSub.
-        assumption.
-      + rewrite <- ?ap_liftSub.
-        rewrite ?liftSub_snoc.
-        rewrite ?ap_comp.
-        rewrite ?wkm_snoc_cancel.
-        rewrite ?ap_liftSub.
-        now apply (wtr_cvar wζ).
+    intros wζ wx; constructor; crush; repeat crushTypingMatchH;
+      rewrite <- ?ap_wkm_ix, ?ap_comp, ?wkm_snoc_cancel; crush.
   Qed.
-  Hint Resolve wtRen_snoc_cvar : ws.
+  Hint Resolve wtRen_snoc_covar : ws.
 
   (* Lemma wtiRen_snoc Γ₁ Γ₂ T ξ x : *)
   (*   WtRen (Γ₁ ▻ T) Γ₂ (ξ · x) → WtRen Γ₁ Γ₂ ξ. *)
@@ -367,48 +303,60 @@ Section Renaming.
   (* Qed. *)
   (* Hint Resolve wtiIx_snoc : wsi. *)
 
-  Lemma wtRen_up_evar {Γ₁ Γ₂ ζ} (wζ: ⟨ ζ : Γ₁ -> Γ₂ ⟩) :
-    ∀ τ : Tm, ⟨ ζ↑ : Γ₁ ▻ τ -> Γ₂ ▻ τ[ζ] ⟩.
+  Lemma wtRen_up_tmvar {Γ₁ Γ₂ ζ} (wζ: ⟨ ζ : Γ₁ -> Γ₂ ⟩) :
+    ∀ τ, ⟨ ζ↑ : Γ₁ ▻ τ -> Γ₂ ▻ τ[ζ] ⟩.
   Proof.
     rewrite up_def.
     constructor; crush.
     - inversion H; clear H; crush.
-      + rewrite <- ?ap_liftSub.
-        rewrite ?liftSub_snoc.
-        rewrite ?ap_comp.
-        rewrite ?wkm_snoc_cancel.
-        rewrite liftSub_comp.
-        rewrite liftSub_wkm.
-        rewrite <- ?ap_comp.
-        rewrite ?ap_liftSub.
-        constructor.
-      + (* rewrite <- ap_liftSub at 4. *)
-        rewrite <- (ap_liftSub _ ((ζ >=> wkm) · 0)).
-        rewrite ?liftSub_snoc.
-        rewrite ?ap_comp.
-        rewrite ?wkm_snoc_cancel.
-        rewrite liftSub_comp.
-        rewrite liftSub_wkm.
-        rewrite <- ?ap_comp.
-        rewrite ?ap_liftSub.
-        constructor.
-        now apply (wtr_evar wζ).
-    - repeat crushTypingMatchH; crush.
-      constructor.
-      now apply (wtr_tvar wζ).
-    - repeat crushTypingMatchH; crush.
-      rewrite <- ?(ap_liftSub _ ((ζ >=> wkm) · 0)).
-      rewrite ?liftSub_snoc.
-      rewrite ?ap_comp.
+    - inversion H; clear H; crush.
+      rewrite <- ?(ap_wkm_ix (X:=Exp)), ?ap_comp.
       rewrite ?wkm_snoc_cancel.
-      rewrite liftSub_comp.
-      rewrite liftSub_wkm.
-      rewrite <- ?ap_comp.
-      rewrite ?ap_liftSub.
-      econstructor.
-      now apply (wtr_cvar wζ).
+      rewrite <- ?ap_comp, ?(ap_wkm_ix (X:=Exp)).
+      constructor.
+      now apply (wtr_covar wζ).
+    - inversion H; clear H; crush.
+      + rewrite <- ap_wkm_ix, ap_comp.
+        rewrite wkm_snoc_cancel.
+        rewrite <- ap_comp, ap_wkm_ix.
+        constructor.
+      + rewrite <- (ap_wkm_ix (X:=Exp)) , ap_comp.
+        rewrite wkm_snoc_cancel.
+        rewrite <- ap_comp, (ap_wkm_ix (X:=Exp)).
+        constructor.
+        now apply (wtr_tmvar wζ).
   Qed.
-  Hint Resolve wtRen_up_evar : ws.
+  Hint Resolve wtRen_up_tmvar : ws.
+
+  Lemma wtRen_up_tyvar {Γ₁ Γ₂ ζ} (wζ: ⟨ ζ : Γ₁ -> Γ₂ ⟩) :
+    ∀ k, ⟨ ζ↑ : Γ₁ ► k -> Γ₂ ► k ⟩.
+  Proof. rewrite up_def. constructor; crush. Qed.
+  Hint Resolve wtRen_up_tyvar : ws.
+
+  Lemma wtRen_up_covar {Γ₁ Γ₂ ζ} (wζ: ⟨ ζ : Γ₁ -> Γ₂ ⟩) :
+    ∀ τ1 τ2 k, ⟨ ζ↑ : Γ₁ ◅ τ1 ~ τ2 ∷ k -> Γ₂ ◅ τ1[ζ] ~ τ2[ζ] ∷ k ⟩.
+  Proof.
+    rewrite up_def.
+    constructor; crush.
+    - inversion H; clear H; crush.
+    - inversion H; clear H; crush.
+      + rewrite <- ?(ap_wkm_ix (X:=Exp)), ?ap_comp.
+        rewrite ?wkm_snoc_cancel.
+        rewrite <- ?ap_comp, ?(ap_wkm_ix (X:=Exp)).
+        constructor.
+      + rewrite <- ?(ap_wkm_ix (X:=Exp)), ?ap_comp.
+        rewrite ?wkm_snoc_cancel.
+        rewrite <- ?ap_comp, ?(ap_wkm_ix (X:=Exp)).
+        constructor.
+        now apply (wtr_covar wζ).
+    - inversion H; clear H; crush.
+      rewrite <- (ap_wkm_ix (X:=Exp)), ap_comp.
+      rewrite wkm_snoc_cancel.
+      rewrite <- ap_comp, (ap_wkm_ix (X:=Exp)).
+      constructor.
+      now apply (wtr_tmvar wζ).
+  Qed.
+  Hint Resolve wtRen_up_covar : ws.
 
   (*
   Lemma wtiRen_up Γ₁ Γ₂ ξ T :
@@ -428,19 +376,55 @@ Section Renaming.
     WtRen (Γ₁ ▻▻ Δ) (Γ₂ ▻▻ Δ) (ξ ↑⋆ dom Δ) → WtRen Γ₁ Γ₂ ξ.
   Proof. induction Δ; eauto with wsi. Qed.
   Hint Resolve wtiRen_ups : wsi.
-
   Lemma wtRen_beta (Γ Δ: Env) :
     ∀ ξ, WtRen Δ Γ ξ → WtRen (Γ ▻▻ Δ) Γ (beta (dom Δ) ξ).
   Proof. unfold WtRen; induction Δ; crush. Qed.
   Hint Resolve wtRen_beta : ws.
+  *)
 
-  Lemma typing_ren {Γ₁ t T} (wt: ⟪ Γ₁ ⊢ t : T ⟫) :
-    ∀ Γ₂ ξ, WtRen Γ₁ Γ₂ ξ → ⟪ Γ₂ ⊢ t[ξ] : T ⟫.
-  Proof. induction wt; econstructor; crush. Qed.
-  Hint Resolve typing_ren : ws.
+  Lemma ty_ren {Γ τ k} (wτ: ⟨ Γ ⊢ τ ∷ k ⟩) :
+    ∀ Δ ζ, ⟨ ζ : Γ -> Δ ⟩ → ⟨ Δ ⊢ τ[ζ] ∷ k ⟩.
+  Proof. induction wτ; crush. Qed.
+  Hint Resolve ty_ren : ws.
+
+  Lemma co_ren {Γ γ τ1 τ2 k} (wγ: ⟨ Γ ⊢ γ : τ1 ~ τ2 ∷ k ⟩) :
+    ∀ Δ ζ, ⟨ ζ : Γ -> Δ ⟩ → ⟨ Δ ⊢ γ[ζ] : τ1[ζ] ~ τ2[ζ] ∷ k ⟩.
+  Proof.
+    induction wγ; intros ? ζ wζ; crush.
+    - rewrite <- ?ap_liftSub.
+      rewrite apply_beta1_comm.
+      rewrite up_liftSub.
+      rewrite ?ap_liftSub.
+      constructor; eauto with ws.
+  Qed.
+  Hint Resolve co_ren : ws.
+
+  Lemma tm_ren {Γ s τ} (wt: ⟨ Γ ⊢ s : τ ⟩) :
+    ∀ Δ ζ, ⟨ ζ : Γ -> Δ ⟩ → ⟨ Δ ⊢ s[ζ] : τ[ζ] ⟩.
+  Proof.
+    induction wt; intros ? ζ wζ; crush.
+    - constructor; crush.
+      rewrite <- ap_wkm_ix.
+      rewrite apply_wkm_comm.
+      rewrite ap_wkm_ix.
+      apply IHwt; crush.
+    - constructor.
+      rewrite <- ap_wkm_ix.
+      rewrite apply_wkm_comm.
+      rewrite ap_wkm_ix.
+      apply IHwt; crush.
+    - rewrite <- ?ap_liftSub.
+      rewrite apply_beta1_comm.
+      rewrite up_liftSub.
+      rewrite ?ap_liftSub.
+      crush.
+    - econstructor; crush.
+  Qed.
+  Hint Resolve tm_ren : ws.
 
 End Renaming.
 
+(*
 Section Substitution.
 
   (* Lemma typing_weakening Δ {Γ t T} (wt: ⟪ Γ ⊢ t : T ⟫) : *)
@@ -568,4 +552,4 @@ Section Substitution.
   crushTyping : typing.
 
 End Substitution.
-*)
+ *)

@@ -12,31 +12,37 @@ Inductive Kind : Type :=
 Implicit Types k : Kind.
 
 Inductive Exp : Type :=
-  | var      x
+  | var        x
   (**********************)
-  | τabs     k (τ: Exp)
-  | τapp     (τ1 τ2: Exp)
-  | arr      (τ1 τ2: Exp)
-  | arrτ     k (τ: Exp)
-  | arrγ     (τ1 τ2: Exp) k (τ3: Exp)
+  | τabs       k (τ: Exp)
+  | τapp       (τ1 τ2: Exp)
+  | arr        (τ1 τ2: Exp)
+  | arrτ       k (τ: Exp)
+  | arrγ       (τ1 τ2: Exp) k (τ3: Exp)
   (**********************)
-  | coτabs   k (γ: Exp)
-  | coτapp   (γ1 γ2: Exp)
-  | coarr    (γ1 γ2: Exp)
-  | coarrτ   k (γ: Exp)
-  | coarrγ   (γ1 γ2: Exp) k (γ: Exp)
-  | cobeta   (γ1 γ2: Exp)
-  | corefl   (τ: Exp)
-  | cosym    (γ: Exp)
-  | cotrans  (γ1 γ2: Exp)
+  | coτabs     k (γ: Exp)
+  | coτapp     (γ1 γ2: Exp)
+  | coarr      (γ1 γ2: Exp)
+  | coarrτ     k (γ: Exp)
+  | coarrγ     (γ1 γ2: Exp) k (γ: Exp)
+  | coinvarr₁  (γ: Exp)
+  | coinvarr₂  (γ: Exp)
+  | coinvarrτ  (γ1 γ2: Exp)
+  | coinvarrγ₁ (γ: Exp)
+  | coinvarrγ₂ (γ: Exp)
+  | coinvarrγ₃ (γ: Exp)
+  | cobeta     (γ1 γ2: Exp)
+  | corefl     (τ: Exp)
+  | cosym      (γ: Exp)
+  | cotrans    (γ1 γ2: Exp)
   (**********************)
-  | abs      (τ s: Exp)
-  | absτ     k (s: Exp)
-  | absγ     (τ1 τ2: Exp) k (s : Exp)
-  | app      (s1 s2 : Exp)
-  | appτ     (s τ: Exp)
-  | appγ     (s γ: Exp)
-  | cast     (s γ: Exp).
+  | abs        (τ s: Exp)
+  | absτ       k (s: Exp)
+  | absγ       (τ1 τ2: Exp) k (s : Exp)
+  | app        (s1 s2 : Exp)
+  | appτ       (s τ: Exp)
+  | appγ       (s γ: Exp)
+  | cast       (s γ: Exp).
 
 Implicit Types e s τ γ : Exp.
 
@@ -84,6 +90,12 @@ Section DeBruijn.
       | coarr γ1 γ2      =>  coarr γ1[ζ] γ2[ζ]
       | coarrτ k γ       =>  coarrτ k γ[ζ↑]
       | coarrγ γ1 γ2 k γ =>  coarrγ γ1[ζ] γ2[ζ] k γ[ζ]
+      | coinvarr₁ γ      =>  coinvarr₁ γ[ζ]
+      | coinvarr₂ γ      =>  coinvarr₂ γ[ζ]
+      | coinvarrτ γ1 γ2  =>  coinvarrτ γ1[ζ] γ2[ζ]
+      | coinvarrγ₁ γ     =>  coinvarrγ₁ γ[ζ]
+      | coinvarrγ₂ γ     =>  coinvarrγ₂ γ[ζ]
+      | coinvarrγ₃ γ     =>  coinvarrγ₃ γ[ζ]
       | cobeta γ1 γ2     =>  cobeta γ1[ζ↑] γ2[ζ]
       | corefl τ         =>  corefl τ[ζ]
       | cosym γ          =>  cosym γ[ζ]

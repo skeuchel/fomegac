@@ -279,10 +279,15 @@ Lemma co_ren {Γ γ τ1 τ2 k} (wγ: ⟨ Γ ⊢ γ : τ1 ~ τ2 ∷ k ⟩) :
 Proof.
   induction wγ; intros ? ζ wζ; crush.
   - rewrite <- ?ap_liftSub.
-    rewrite apply_beta1_comm.
-    rewrite up_liftSub.
+    rewrite ?apply_beta1_comm.
+    rewrite ?up_liftSub.
     rewrite ?ap_liftSub.
-    constructor; eauto with ws.
+    econstructor; eauto with ws.
+  - rewrite <- ?ap_liftSub.
+    rewrite ?apply_beta1_comm.
+    rewrite ?up_liftSub.
+    rewrite ?ap_liftSub.
+    econstructor; eauto with ws.
 Qed.
 Hint Resolve co_ren : ws.
 
@@ -533,6 +538,12 @@ Fixpoint apRed (ζγd ζγe ζ1 ζ2: Sub Exp) (τ: Exp) {struct τ} : Exp :=
     | coarr  γ1 γ2       =>  coarr  (apRed ζγd ζγe ζ1 ζ2 γ1) (apRed ζγd ζγe ζ1 ζ2 γ2)
     | coarrτ k γ         =>  coarrτ k (apRed (upred ζγd) (upred ζγe) ζ1↑ ζ2↑ γ)
     | coarrγ γ1 γ2 k γ3  =>  coarrγ (apRed ζγd ζγe ζ1 ζ2 γ1) (apRed ζγd ζγe ζ1 ζ2 γ2) k (apRed ζγd ζγe ζ1 ζ2 γ3)
+    | coinvarr₁ γ        =>  coinvarr₁ (apRed ζγd ζγe ζ1 ζ2 γ)
+    | coinvarr₂ γ        =>  coinvarr₂ (apRed ζγd ζγe ζ1 ζ2 γ)
+    | coinvarrτ γ1 γ2    =>  coinvarrτ (apRed ζγd ζγe ζ1 ζ2 γ1) (apRed ζγd ζγe ζ1 ζ2 γ2)
+    | coinvarrγ₁ γ       =>  coinvarrγ₁ (apRed ζγd ζγe ζ1 ζ2 γ)
+    | coinvarrγ₂ γ       =>  coinvarrγ₂ (apRed ζγd ζγe ζ1 ζ2 γ)
+    | coinvarrγ₃ γ       =>  coinvarrγ₃ (apRed ζγd ζγe ζ1 ζ2 γ)
     | cobeta γ1 γ2       =>  cobeta (apRed (upred ζγd) (upred ζγe) ζ1↑ ζ2↑ γ1) (apRed ζγd ζγe ζ1 ζ2 γ2)
     | corefl τ           =>  apRed ζγd ζγe ζ1 ζ2 τ
     | cosym γ            =>  cosym (apRedSym ζγd ζγe ζ1 ζ2 γ)
@@ -552,6 +563,12 @@ with apRedSym (ζγd ζγe ζ1 ζ2: Sub Exp) (τ: Exp) {struct τ} : Exp :=
     | coarr  γ1 γ2       =>  coarr  (apRedSym ζγd ζγe ζ1 ζ2 γ1) (apRedSym ζγd ζγe ζ1 ζ2 γ2)
     | coarrτ k γ         =>  coarrτ k (apRedSym (upred ζγd) (upred ζγe) ζ1↑ ζ2↑ γ)
     | coarrγ γ1 γ2 k γ3  =>  coarrγ (apRedSym ζγd ζγe ζ1 ζ2 γ1) (apRedSym ζγd ζγe ζ1 ζ2 γ2) k (apRedSym ζγd ζγe ζ1 ζ2 γ3)
+    | coinvarr₁ γ        =>  coinvarr₁ (apRedSym ζγd ζγe ζ1 ζ2 γ)
+    | coinvarr₂ γ        =>  coinvarr₂ (apRedSym ζγd ζγe ζ1 ζ2 γ)
+    | coinvarrτ γ1 γ2    =>  coinvarrτ (apRedSym ζγd ζγe ζ1 ζ2 γ1) (apRedSym ζγd ζγe ζ1 ζ2 γ2)
+    | coinvarrγ₁ γ       =>  coinvarrγ₁ (apRedSym ζγd ζγe ζ1 ζ2 γ)
+    | coinvarrγ₂ γ       =>  coinvarrγ₂ (apRedSym ζγd ζγe ζ1 ζ2 γ)
+    | coinvarrγ₃ γ       =>  coinvarrγ₃ (apRedSym ζγd ζγe ζ1 ζ2 γ)
     | cobeta γ1 γ2       =>  cobeta (apRedSym (upred ζγd) (upred ζγe) ζ1↑ ζ2↑ γ1) (apRedSym ζγd ζγe ζ1 ζ2 γ2)
     | corefl τ           =>  apRedSym ζγd ζγe ζ1 ζ2 τ
     | cosym γ            =>  cosym (apRed ζγd ζγe ζ1 ζ2 γ)

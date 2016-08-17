@@ -125,6 +125,25 @@ Inductive Co (Γ: Env) : Exp → Exp → Exp → Kind → Prop :=
       ⟨ Γ ⊢ γ2 : τ2 ~ τ2' ∷ k ⟩ →
       ⟨ Γ ⊢ γ3 : τ3 ~ τ3' ∷ kstar ⟩ →
       ⟨ Γ ⊢ coarrγ γ1 γ2 k γ3 : arrγ τ1 τ2 k τ3 ~ arrγ τ1' τ2' k τ3' ∷ kstar ⟩
+  | CoInvArr₁ {γ τ11 τ12 τ21 τ22}:
+      ⟨ Γ ⊢ γ : arr τ11 τ12 ~ arr τ21 τ22 ∷ kstar ⟩ →
+      ⟨ Γ ⊢ coinvarr₁ γ : τ11 ~ τ21 ∷ kstar ⟩
+  | CoInvArr₂ {γ τ11 τ12 τ21 τ22}:
+      ⟨ Γ ⊢ γ : arr τ11 τ12 ~ arr τ21 τ22 ∷ kstar ⟩ →
+      ⟨ Γ ⊢ coinvarr₂ γ : τ12 ~ τ22 ∷ kstar ⟩
+  | CoInvArrτ {γ1 γ2 τ1 τ2 τ3 τ4 k} :
+      ⟨ Γ ⊢ γ1 : arrτ k τ1 ~ arrτ k τ2 ∷ kstar ⟩ →
+      ⟨ Γ ⊢ γ2 : τ3 ~ τ4 ∷ k ⟩ →
+      ⟨ Γ ⊢ coinvarrτ γ1 γ2 : τ1[beta1 τ3] ~ τ2[beta1 τ4] ∷ kstar ⟩
+  | CoInvArrγ₁ {γ τ1 τ1' τ2 τ2' τ3 τ3' k} :
+      ⟨ Γ ⊢ γ : arrγ τ1 τ2 k τ3 ~ arrγ τ1' τ2' k τ3' ∷ kstar ⟩ →
+      ⟨ Γ ⊢ coinvarrγ₁ γ : τ1 ~ τ1' ∷ k ⟩
+  | CoInvArrγ₂ {γ τ1 τ1' τ2 τ2' τ3 τ3' k} :
+      ⟨ Γ ⊢ γ : arrγ τ1 τ2 k τ3 ~ arrγ τ1' τ2' k τ3' ∷ kstar ⟩ →
+      ⟨ Γ ⊢ coinvarrγ₂ γ : τ2 ~ τ2' ∷ k ⟩
+  | CoInvArrγ₃ {γ τ1 τ1' τ2 τ2' τ3 τ3' k} :
+      ⟨ Γ ⊢ γ : arrγ τ1 τ2 k τ3 ~ arrγ τ1' τ2' k τ3' ∷ kstar ⟩ →
+      ⟨ Γ ⊢ coinvarrγ₂ γ : τ3 ~ τ3' ∷ kstar ⟩
   | CoBeta {γ1 γ2 τ11 τ12 τ21 τ22 k1 k2} :
       ⟨ Γ ► k1 ⊢ γ1 : τ11 ~ τ21 ∷ k2 ⟩ →
       ⟨ Γ ⊢ γ2 : τ12 ~ τ22 ∷ k1 ⟩ →

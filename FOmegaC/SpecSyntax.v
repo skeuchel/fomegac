@@ -24,7 +24,7 @@ Inductive Exp : Type :=
   | coτapp   (γ1 γ2: Exp)
   | coarr    (γ1 γ2: Exp)
   | coarrτ   k (γ: Exp)
-  | coarrγ   (τ1 τ2: Exp) k (γ: Exp)
+  | coarrγ   (γ1 γ2: Exp) k (γ: Exp)
   | cobeta   (γ1 γ2: Exp)
   | corefl   (τ: Exp)
   | cosym    (γ: Exp)
@@ -83,7 +83,7 @@ Section DeBruijn.
       | coτapp γ1 γ2     =>  coτapp γ1[ζ] γ2[ζ]
       | coarr γ1 γ2      =>  coarr γ1[ζ] γ2[ζ]
       | coarrτ k γ       =>  coarrτ k γ[ζ↑]
-      | coarrγ τ1 τ2 k γ =>  coarrγ τ1[ζ] τ2[ζ] k γ[ζ]
+      | coarrγ γ1 γ2 k γ =>  coarrγ γ1[ζ] γ2[ζ] k γ[ζ]
       | cobeta γ1 γ2     =>  cobeta γ1[ζ↑] γ2[ζ]
       | corefl τ         =>  corefl τ[ζ]
       | cosym γ          =>  cosym γ[ζ]

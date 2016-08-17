@@ -457,3 +457,130 @@ Proof.
   - econstructor; crush.
 Qed.
 Hint Resolve tm_sub : ws.
+
+
+Record WtRed (Γ Δ: Env) (ζγd ζγe ζ1 ζ2: Sub Exp) : Prop :=
+  { wtd_tyvar : ∀ {α k},
+                  ⟨ α ∷ k ∈ Γ ⟩ →
+                  ⟨ Δ ⊢ ζγd α : ζ1 α ~ ζ2 α ∷ k ⟩;
+    wtd_covar : ∀ {c τ1 τ2 k},
+                  ⟨ c : τ1 ~ τ2 ∷ k ∈ Γ ⟩ →
+                  ⟨ Δ ⊢ ζγd c : τ1[ζ1] ~ τ2[ζ2] ∷ k ⟩;
+    wte_tyvar : ∀ {α k},
+                  ⟨ α ∷ k ∈ Γ ⟩ →
+                  ⟨ Δ ⊢ ζγe α : ζ2 α ~ ζ1 α ∷ k ⟩;
+    wte_covar : ∀ {c τ1 τ2 k},
+                  ⟨ c : τ1 ~ τ2 ∷ k ∈ Γ ⟩ →
+                  ⟨ Δ ⊢ ζγe c : τ1[ζ2] ~ τ2[ζ1] ∷ k ⟩;
+    wtsub_left :> ⟨ ζ1 : Γ => Δ ⟩;
+    wtsub_right :> ⟨ ζ2 : Γ => Δ ⟩;
+  }.
+
+Hint Resolve wtd_tyvar : ws.
+Hint Resolve wtd_covar : ws.
+Hint Resolve wte_tyvar : ws.
+Hint Resolve wte_covar : ws.
+Hint Resolve wtsub_left : ws.
+Hint Resolve wtsub_right : ws.
+
+(* Lemma wtSub_wkm_tyvar Γ k : *)
+(*   ⟨ wkm Exp : Γ => Γ ► k ⟩. *)
+(* Proof. constructor; crush. Qed. *)
+(* Hint Resolve wtSub_wkm_tyvar : ws. *)
+
+(* Lemma wtSub_wkm_covar Γ τ1 τ2 k : *)
+(*   ⟨ wkm Exp : Γ => Γ ◅ τ1 ~ τ2 ∷ k ⟩. *)
+(* Proof. constructor; crush. Qed. *)
+(* Hint Resolve wtSub_wkm_covar : ws. *)
+
+Definition upred (ζγ: Sub Exp) : Sub Exp :=
+  ((ζγ >=> wkm Exp) · corefl (var 0)).
+
+Lemma wtRed_up_tyvar {Γ Δ ζγd ζγe ζ1 ζ2} (wζ: WtRed Γ Δ ζγd ζγe ζ1 ζ2) :
+  ∀ k, WtRed (Γ ► k) (Δ ► k) (upred ζγd) (upred ζγe) ζ1↑ ζ2↑.
+Proof.
+  rewrite ?up_def.
+  constructor; intros.
+  - inversion H; clear H; crush.
+  - inversion H; clear H; crush.
+    rewrite ?ap_comp.
+    rewrite ?wkm_snoc_cancel.
+    rewrite <- ?ap_comp.
+    rewrite <- ?(ap_wkm_ix (X:=Exp)).
+    crush.
+  - inversion H; clear H; crush.
+  - inversion H; clear H; crush.
+    rewrite ?ap_comp.
+    rewrite ?wkm_snoc_cancel.
+    rewrite <- ?ap_comp.
+    rewrite <- ?(ap_wkm_ix (X:=Exp)).
+    crush.
+  - rewrite <- ?up_def; crush.
+  - rewrite <- ?up_def; crush.
+Qed.
+Hint Resolve wtRed_up_tyvar : ws.
+
+Fixpoint apRed (ζγd ζγe ζ1 ζ2: Sub Exp) (τ: Exp) {struct τ} : Exp :=
+  match τ with
+    | var α              =>  ζγd α
+    | τabs k τ           =>  coτabs k (apRed (upred ζγd) (upred ζγe) ζ1↑ ζ2↑ τ)
+    | τapp τ1 τ2         =>  coτapp (apRed ζγd ζγe ζ1 ζ2 τ1) (apRed ζγd ζγe ζ1 ζ2 τ2)
+    | arr  τ1 τ2         =>  coarr  (apRed ζγd ζγe ζ1 ζ2 τ1) (apRed ζγd ζγe ζ1 ζ2 τ2)
+    | arrτ k τ           =>  coarrτ k (apRed (upred ζγd) (upred ζγe) ζ1↑ ζ2↑ τ)
+    | arrγ τ1 τ2 k τ3    =>  coarrγ (apRed ζγd ζγe ζ1 ζ2 τ1) (apRed ζγd ζγe ζ1 ζ2 τ2) k (apRed ζγd ζγe ζ1 ζ2 τ3)
+    | coτabs k γ         =>  coτabs k (apRed (upred ζγd) (upred ζγe) ζ1↑ ζ2↑ γ)
+    | coτapp γ1 γ2       =>  coτapp (apRed ζγd ζγe ζ1 ζ2 γ1) (apRed ζγd ζγe ζ1 ζ2 γ2)
+    | coarr  γ1 γ2       =>  coarr  (apRed ζγd ζγe ζ1 ζ2 γ1) (apRed ζγd ζγe ζ1 ζ2 γ2)
+    | coarrτ k γ         =>  coarrτ k (apRed (upred ζγd) (upred ζγe) ζ1↑ ζ2↑ γ)
+    | coarrγ γ1 γ2 k γ3  =>  coarrγ (apRed ζγd ζγe ζ1 ζ2 γ1) (apRed ζγd ζγe ζ1 ζ2 γ2) k (apRed ζγd ζγe ζ1 ζ2 γ3)
+    | cobeta γ1 γ2       =>  cobeta (apRed (upred ζγd) (upred ζγe) ζ1↑ ζ2↑ γ1) (apRed ζγd ζγe ζ1 ζ2 γ2)
+    | corefl τ           =>  apRed ζγd ζγe ζ1 ζ2 τ
+    | cosym γ            =>  cosym (apRedSym ζγd ζγe ζ1 ζ2 γ)
+    | cotrans γ1 γ2      =>  cotrans (apRed ζγd ζγe ζ1 ζ2 γ1) γ2[ζ2]
+    | _ => var 0
+  end
+with apRedSym (ζγd ζγe ζ1 ζ2: Sub Exp) (τ: Exp) {struct τ} : Exp :=
+  match τ with
+    | var α              =>  ζγe α
+    | τabs k τ           =>  coτabs k (apRedSym (upred ζγd) (upred ζγe) ζ1↑ ζ2↑ τ)
+    | τapp τ1 τ2         =>  coτapp (apRedSym ζγd ζγe ζ1 ζ2 τ1) (apRedSym ζγd ζγe ζ1 ζ2 τ2)
+    | arr  τ1 τ2         =>  coarr  (apRedSym ζγd ζγe ζ1 ζ2 τ1) (apRedSym ζγd ζγe ζ1 ζ2 τ2)
+    | arrτ k τ           =>  coarrτ k (apRedSym (upred ζγd) (upred ζγe) ζ1↑ ζ2↑ τ)
+    | arrγ τ1 τ2 k τ3    =>  coarrγ (apRedSym ζγd ζγe ζ1 ζ2 τ1) (apRedSym ζγd ζγe ζ1 ζ2 τ2) k (apRedSym ζγd ζγe ζ1 ζ2 τ3)
+    | coτabs k γ         =>  coτabs k (apRedSym (upred ζγd) (upred ζγe) ζ1↑ ζ2↑ γ)
+    | coτapp γ1 γ2       =>  coτapp (apRedSym ζγd ζγe ζ1 ζ2 γ1) (apRedSym ζγd ζγe ζ1 ζ2 γ2)
+    | coarr  γ1 γ2       =>  coarr  (apRedSym ζγd ζγe ζ1 ζ2 γ1) (apRedSym ζγd ζγe ζ1 ζ2 γ2)
+    | coarrτ k γ         =>  coarrτ k (apRedSym (upred ζγd) (upred ζγe) ζ1↑ ζ2↑ γ)
+    | coarrγ γ1 γ2 k γ3  =>  coarrγ (apRedSym ζγd ζγe ζ1 ζ2 γ1) (apRedSym ζγd ζγe ζ1 ζ2 γ2) k (apRedSym ζγd ζγe ζ1 ζ2 γ3)
+    | cobeta γ1 γ2       =>  cobeta (apRedSym (upred ζγd) (upred ζγe) ζ1↑ ζ2↑ γ1) (apRedSym ζγd ζγe ζ1 ζ2 γ2)
+    | corefl τ           =>  apRedSym ζγd ζγe ζ1 ζ2 τ
+    | cosym γ            =>  cosym (apRed ζγd ζγe ζ1 ζ2 γ)
+    | cotrans γ1 γ2      =>  cotrans γ1[ζ2] (apRedSym ζγd ζγe ζ1 ζ2 γ2)
+    | _ => var 0
+  end.
+
+Lemma ty_red {Γ τ k} (wτ: ⟨ Γ ⊢ τ ∷ k ⟩) :
+  ∀ Δ ζγd ζγe ζ1 ζ2,
+    WtRed Γ Δ ζγd ζγe ζ1 ζ2 →
+    ⟨ Δ ⊢ apRed ζγd ζγe ζ1 ζ2 τ : τ[ζ1] ~ τ[ζ2] ∷ k ⟩
+with ty_redsym {Γ τ k} (wτ: ⟨ Γ ⊢ τ ∷ k ⟩) :
+  ∀ Δ ζγd ζγe ζ1 ζ2,
+    WtRed Γ Δ ζγd ζγe ζ1 ζ2 →
+    ⟨ Δ ⊢ apRedSym ζγd ζγe ζ1 ζ2 τ : τ[ζ2] ~ τ[ζ1] ∷ k ⟩.
+Proof.
+  - induction wτ; crush.
+  - induction wτ; crush.
+Qed.
+Hint Resolve ty_red : ws.
+Hint Resolve ty_redsym : ws.
+
+Lemma co_red {Γ γ τ1 τ2 k} (wγ: ⟨ Γ ⊢ γ : τ1 ~ τ2 ∷ k ⟩) :
+  ∀ Δ ζγd ζγe ζ1 ζ2, WtRed Γ Δ ζγd ζγe ζ1 ζ2 → ⟨ Δ ⊢ apRed ζγd ζγe ζ1 ζ2 γ : τ1[ζ1] ~ τ2[ζ2] ∷ k ⟩
+with co_redsym {Γ γ τ1 τ2 k} (wγ: ⟨ Γ ⊢ γ : τ1 ~ τ2 ∷ k ⟩) :
+  ∀ Δ ζγd ζγe ζ1 ζ2, WtRed Γ Δ ζγd ζγe ζ1 ζ2 → ⟨ Δ ⊢ apRedSym ζγd ζγe ζ1 ζ2 γ : τ1[ζ2] ~ τ2[ζ1] ∷ k ⟩.
+Proof.
+  - induction wγ; crush.
+  - induction wγ; crush.
+Qed.
+Hint Resolve co_red : ws.
+Hint Resolve co_redsym : ws.

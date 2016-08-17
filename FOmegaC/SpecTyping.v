@@ -81,14 +81,16 @@ Inductive Ty (Γ: Env) : Exp → Kind → Prop :=
       ⟨ Γ ⊢ τ2 ∷ k1 ⟩ →
       ⟨ Γ ⊢ τapp τ1 τ2 ∷ k2 ⟩
   | Arr {τ1 τ2} :
-      ⟨ Γ ⊢ τ1 ∷ kstar ⟩  →
-      ⟨ Γ ⊢ τ2 ∷ kstar ⟩  →
+      ⟨ Γ ⊢ τ1 ∷ kstar ⟩ →
+      ⟨ Γ ⊢ τ2 ∷ kstar ⟩ →
       ⟨ Γ ⊢ arr τ1 τ2 ∷ kstar ⟩
   | Arrτ {τ k} :
-      ⟨ Γ ► k ⊢ τ ∷ kstar ⟩  →
+      ⟨ Γ ► k ⊢ τ ∷ kstar ⟩ →
       ⟨ Γ ⊢ arrτ k τ ∷ kstar ⟩
   | Arrγ {τ1 τ2 τ3 k} :
-      ⟨ Γ ⊢ τ3 ∷ kstar ⟩  →
+      ⟨ Γ ⊢ τ1 ∷ k ⟩ →
+      ⟨ Γ ⊢ τ2 ∷ k ⟩ →
+      ⟨ Γ ⊢ τ3 ∷ kstar ⟩ →
       ⟨ Γ ⊢ arrγ τ1 τ2 k τ3 ∷ kstar ⟩
 where "⟨ Γ ⊢ τ ∷ k ⟩" := (Ty Γ τ k).
 
@@ -118,9 +120,11 @@ Inductive Co (Γ: Env) : Exp → Exp → Exp → Kind → Prop :=
   | CoArrτ {γ τ1 τ2 k} :
       ⟨ Γ ► k ⊢ γ : τ1 ~ τ2 ∷ kstar ⟩ →
       ⟨ Γ ⊢ coarrτ k γ : arrτ k τ1 ~ arrτ k τ2 ∷ kstar ⟩
-  | CoArrγ {γ τ1 τ2 τ3 τ4 k} :
-      ⟨ Γ ⊢ γ : τ3 ~ τ4 ∷ kstar ⟩ →
-      ⟨ Γ ⊢ coarrγ τ1 τ2 k γ : arrγ τ1 τ2 k τ3 ~ arrγ τ1 τ2 k τ4 ∷ kstar ⟩
+  | CoArrγ {γ1 γ2 γ3 τ1 τ1' τ2 τ2' τ3 τ3' k} :
+      ⟨ Γ ⊢ γ1 : τ1 ~ τ1' ∷ k ⟩ →
+      ⟨ Γ ⊢ γ2 : τ2 ~ τ2' ∷ k ⟩ →
+      ⟨ Γ ⊢ γ3 : τ3 ~ τ3' ∷ kstar ⟩ →
+      ⟨ Γ ⊢ coarrγ γ1 γ2 k γ3 : arrγ τ1 τ2 k τ3 ~ arrγ τ1' τ2' k τ3' ∷ kstar ⟩
   | CoBeta {γ1 γ2 τ11 τ12 τ21 τ22 k1 k2} :
       ⟨ Γ ► k1 ⊢ γ1 : τ11 ~ τ21 ∷ k2 ⟩ →
       ⟨ Γ ⊢ γ2 : τ12 ~ τ22 ∷ k1 ⟩ →

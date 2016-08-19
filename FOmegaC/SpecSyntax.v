@@ -1,4 +1,4 @@
-
+Require Import Coq.Lists.List.
 Require Export ParDB.Spec.
 Require Export ParDB.Lemmas.
 Require Export ParDB.Inst.
@@ -123,12 +123,24 @@ End DeBruijn.
 Instance vrExp : Vr Exp := {| vr := var |}.
 Proof. inversion 1; auto. Defined.
 
+Ltac crushSyntaxMatch :=
+  match goal with
+    | [H: cons _ _ = cons _ _ |- _ ] =>
+      inversion H; clear H
+    | [ |- cons _ _ = cons _ _ ] =>
+      f_equal
+  end.
+
 Ltac crushSyntaxRefold :=
   match goal with
     | [ H: context[apExp ?ζ ?e] |- _ ] =>
       change (apExp ζ e) with e[ζ] in H
+    | [ H: context[List.map (ap ?ζ) ?es] |- _ ] =>
+      change (List.map (ap ζ) es) with es[ζ] in H
     | [ |- context[apExp ?ζ ?e] ] =>
       change (apExp ζ e) with e[ζ]
+    | [ |- context[List.map (ap ?ζ) ?es] ] =>
+      change (List.map (ap ζ) es) with es[ζ]
     (* | [ H: context[apBinding ?ζ ?b] |- _ ] => *)
     (*   change (apBinding ζ b) with b[ζ] in H *)
     (* | [ |- context[apBinding ?ζ ?b] ] => *)
@@ -143,6 +155,7 @@ Local Ltac crush :=
      repeat crushDbLemmasMatchH;
      rewrite ?ap_comp, ?comp_up, ?up_liftSub, ?up_comp_lift;
      repeat crushSyntaxRefold;
+     repeat crushSyntaxMatch;
      eauto;
      idtac).
 
@@ -194,6 +207,19 @@ Module ExpKit <: Kit.
   Proof. induction t; derive. Qed.
 
 End ExpKit.
+
+Section ApplicationListExp.
+
+  Context {X: Type}.
+  Context {vrX : Vr X}.
+  Context {wkX: Wk X}.
+  Context {liftXUExp: Lift X Exp}.
+
+  Global Instance ApListExp : Ap (list Exp) X :=
+    {| ap := fun ζ => map (ap ζ) |}.
+  Proof. induction x; crush. Defined.
+
+End ApplicationListExp.
 
 Section ApplicationBinding.
 

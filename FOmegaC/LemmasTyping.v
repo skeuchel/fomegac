@@ -50,6 +50,8 @@ Arguments wts_tmvar {_ _ _} _ {_ _} _.
 
 Hint Constructors Ty : ws.
 Hint Constructors Co : ws.
+Hint Constructors Red : ws.
+Hint Constructors RedStar : ws.
 Hint Constructors Tm : ws.
 Hint Resolve wtr_tyvar : ws.
 Hint Resolve wtr_covar : ws.
@@ -291,6 +293,25 @@ Proof.
 Qed.
 Hint Resolve co_ren : ws.
 
+Lemma red_ren {Γ γ τ1 τ2 k} (wγ: ⟨ Γ ⊢ γ : τ1 ↝ τ2 ∷ k ⟩) :
+  ∀ Δ ζ, ⟨ ζ : Γ -> Δ ⟩ → ⟨ Δ ⊢ γ[ζ] : τ1[ζ] ↝ τ2[ζ] ∷ k ⟩.
+Proof.
+  induction wγ; intros ? ζ wζ; crush.
+  - rewrite <- ?ap_liftSub.
+    rewrite ?apply_beta1_comm.
+    rewrite ?up_liftSub.
+    rewrite ?ap_liftSub.
+    econstructor; eauto with ws.
+Qed.
+Hint Resolve red_ren : ws.
+
+Lemma redstar_ren {Γ γs τ1 τ2 k} (wγ: ⟨ Γ ⊢ γs : τ1 ↝* τ2 ∷ k ⟩) :
+  ∀ Δ ζ, ⟨ ζ : Γ -> Δ ⟩ → ⟨ Δ ⊢ γs[ζ] : τ1[ζ] ↝* τ2[ζ] ∷ k ⟩.
+Proof.
+  induction wγ; intros ? ζ wζ; crush.
+Qed.
+Hint Resolve redstar_ren : ws.
+
 Lemma tm_ren {Γ s τ} (wt: ⟨ Γ ⊢ s : τ ⟩) :
   ∀ Δ ζ, ⟨ ζ : Γ -> Δ ⟩ → ⟨ Δ ⊢ s[ζ] : τ[ζ] ⟩.
 Proof.
@@ -313,6 +334,8 @@ Proof.
   - econstructor; crush.
 Qed.
 Hint Resolve tm_ren : ws.
+
+(*************************************************************************)
 
 Lemma wtSub_closed ζ Δ : ⟨ ζ : nil => Δ ⟩.
 Proof. constructor; inversion 1. Qed.
@@ -463,6 +486,7 @@ Proof.
 Qed.
 Hint Resolve tm_sub : ws.
 
+(*************************************************************************)
 
 Record WtCoSub (Γ Δ: Env) (ζγ ζγi ζ1 ζ2: Sub Exp) : Prop :=
   { wcs_tyvar : ∀ {α k},
@@ -477,16 +501,16 @@ Record WtCoSub (Γ Δ: Env) (ζγ ζγi ζ1 ζ2: Sub Exp) : Prop :=
     wcs_covari : ∀ {c τ1 τ2 k},
                   ⟨ c : τ1 ~ τ2 ∷ k ∈ Γ ⟩ →
                   ⟨ Δ ⊢ ζγi c : τ1[ζ2] ~ τ2[ζ1] ∷ k ⟩;
-    wtsub_left :> ⟨ ζ1 : Γ => Δ ⟩;
-    wtsub_right :> ⟨ ζ2 : Γ => Δ ⟩;
+    wcs_left :> ⟨ ζ1 : Γ => Δ ⟩;
+    wcs_right :> ⟨ ζ2 : Γ => Δ ⟩;
   }.
 
 Hint Resolve wcs_tyvar : ws.
 Hint Resolve wcs_covar : ws.
 Hint Resolve wcs_tyvari : ws.
 Hint Resolve wcs_covari : ws.
-Hint Resolve wtsub_left : ws.
-Hint Resolve wtsub_right : ws.
+Hint Resolve wcs_left : ws.
+Hint Resolve wcs_right : ws.
 
 (* Lemma wtSub_wkm_tyvar Γ k : *)
 (*   ⟨ wkm Exp : Γ => Γ ► k ⟩. *)
@@ -605,3 +629,5 @@ Proof.
 Qed.
 Hint Resolve co_cosub : ws.
 Hint Resolve co_cosubsym : ws.
+
+(*************************************************************************)

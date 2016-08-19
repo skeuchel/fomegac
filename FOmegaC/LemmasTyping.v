@@ -1,3 +1,4 @@
+Require Import Coq.Lists.List.
 Require Export ParDB.Spec.
 Require Export ParDB.Lemmas.
 Require Export ParDB.Inst.
@@ -151,6 +152,19 @@ Local Ltac crush :=
      eauto 200 with core ws;
      idtac
     ).
+
+Lemma red_co {Γ γ σ τ k} :
+  ⟨ Γ ⊢ γ : σ ↝ τ ∷ k ⟩ →
+  ⟨ Γ ⊢ γ : σ ~ τ ∷ k ⟩.
+Proof. induction 1; crush. Qed.
+Hint Resolve red_co : ws.
+
+Lemma redstar_co {Γ γs σ τ k} :
+  ⟨ Γ ⊢ γs : σ ↝* τ ∷ k ⟩ →
+  ⟨ Γ ⊢ fold_right (fun γ2 γ1 => cotrans γ1 γ2) (corefl σ) γs : σ ~ τ ∷ k ⟩.
+Proof. induction 1; crush. Qed.
+
+(*************************************************************************)
 
 Lemma wtRen_closed {ζ Δ} :
   ⟨ ζ : nil -> Δ ⟩.

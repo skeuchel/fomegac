@@ -10,3 +10,4 @@ FOmegaC/SpecTyping.v
 FOmegaC/LemmasTyping.v
 FOmegaC/Agreement.v
 FOmegaC/Consistency.v
+FOmegaC/Progress.v

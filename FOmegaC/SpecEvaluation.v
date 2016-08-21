@@ -5,14 +5,18 @@ Require Export SpecTyping.
 (* Evaluation.                                                           *)
 (*************************************************************************)
 
-Fixpoint Value (t: Exp) : Prop :=
+Definition Value (t: Exp) : Prop :=
   match t with
     | abs τ s        => True
     | absτ k s       => True
     | absγ τ1 τ2 k s => True
-    | cast t _       => Value t
+    | cast (abs τ s) γ        => True
+    | cast (absτ k s) γ       => True
+    | cast (absγ τ1 τ2 k s) γ => True
     | _              => False
   end.
+
+
 
 (* Reserved Notation "γ ──> γ'" (at level 55). *)
 (* Inductive evalco : Exp → Exp → Prop := *)
@@ -127,7 +131,7 @@ Inductive eval : Exp → Exp → Prop :=
   | eval_appγ {t t' γ} :
       t --> t' → appγ t γ --> appτ t' γ
   | eval_betaγ {t γ τ1 τ2 k} :
-      appτ (absγ τ1 τ2 k t) γ --> t[beta1 γ]
+      appγ (absγ τ1 τ2 k t) γ --> t[beta1 γ]
   | eval_cast {t t' γ} :
       t --> t' →
       cast t γ --> cast t' γ
@@ -149,4 +153,7 @@ Inductive eval : Exp → Exp → Prop :=
      (* nth¹ γ        : σ1 ~ σ2 *)
      (* nth² γ        : τ1 ~ τ2 *)
      (* nth³ γ        : ρ1 ~ ρ2 *)
+  | eval_cast_cat {t η γ} :
+      cast (cast t η) γ -->
+        cast t (cotrans η γ)
 where "t --> t'" := (eval t t').

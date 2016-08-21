@@ -7,26 +7,48 @@ Require Export SpecSyntax.
 Require Export SpecTyping.
 Require Export LemmasTyping.
 
+
+Record WfEnv (Γ: Env) : Prop :=
+  { wfenv_covar_kind_left : ∀ c σ τ k, ⟨ c : σ ~ τ ∷ k ∈ Γ ⟩ → ⟨ Γ ⊢ σ ∷ k ⟩;
+    wfenv_covar_kind_right : ∀ c σ τ k, ⟨ c : σ ~ τ ∷ k ∈ Γ ⟩ → ⟨ Γ ⊢ τ ∷ k ⟩;
+    wfenv_tmvar_ty : ∀ x τ, ⟨ x : τ ∈ Γ ⟩ → ⟨ Γ ⊢ τ ∷ kstar ⟩
+  }.
+
+Ltac crushAgreement :=
+  match goal with
+    | [IH: WfEnv ?Γ → _ |- _] =>
+      let H := fresh in
+        assert (WfEnv Γ) as H by eauto with ws;
+        specialize (IH H); clear H
+    | [IH: ⟨ ?Γ ⊢ ?σ ∷ ?k ⟩ → _ |- _] =>
+      let H := fresh in
+        assert ⟨ Γ ⊢ σ ∷ k ⟩ as H by trivial;
+        specialize (IH H); clear H
+    | [ |- _ ∧ _ ] => split
+  end.
+
 Local Ltac crush :=
   intros;
   repeat
     (cbn in *;
-     (* repeat crushStlcSyntaxMatchH; *)
+      (* repeat crushStlcSyntaxMatchH; *)
+     repeat crushAgreement;
      repeat crushDbSyntaxMatchH;
      repeat crushDbLemmasRewriteH;
      repeat crushSyntaxRefold;
      repeat crushTypingMatchH;
      subst*;
      try discriminate;
-     eauto 200 with ws;
+     eauto 3 with ws;
+     trivial;
      idtac
     ).
 
 Lemma red_co {Γ γ σ τ k} :
   ⟨ Γ ⊢ γ : σ ↝ τ ∷ k ⟩ →
   ⟨ Γ ⊢ γ : σ ~ τ ∷ k ⟩.
-Proof. induction 1; eauto using Co, Ty. Qed.
-Hint Resolve red_co : ws.
+Proof. induction 1; eauto with ws. Qed.
+(* Hint Resolve red_co : ws. *)
 
 Definition cofromredstar (σ: Exp) (γs: list Exp) : Exp :=
   fold_right (fun γ2 γ1 => cotrans γ1 γ2) (corefl σ) γs.
@@ -34,39 +56,61 @@ Definition cofromredstar (σ: Exp) (γs: list Exp) : Exp :=
 Lemma redstar_co {Γ γs σ τ k} :
   ⟨ Γ ⊢ γs : σ ↝* τ ∷ k ⟩ →
   ⟨ Γ ⊢ cofromredstar σ γs : σ ~ τ ∷ k ⟩.
-Proof. induction 1; crush. Qed.
-Hint Resolve redstar_co : ws.
+Proof. induction 1; crush; eauto using red_co. Qed.
+(* Hint Resolve redstar_co : ws. *)
 
-Record WfEnv (Γ: Env) : Prop :=
-  { wfenv_covar_kind_left : ∀ c σ τ k, ⟨ c : σ ~ τ ∷ k ∈ Γ ⟩ → ⟨ Γ ⊢ σ ∷ k ⟩;
-    wfenv_covar_kind_right : ∀ c σ τ k, ⟨ c : σ ~ τ ∷ k ∈ Γ ⟩ → ⟨ Γ ⊢ τ ∷ k ⟩
-  }.
-Hint Resolve wfenv_covar_kind_left.
-Hint Resolve wfenv_covar_kind_right.
+Section WfEnv.
 
-Lemma wfenv_snoc_tyvar {Γ} (wΓ: WfEnv Γ) : ∀ k, WfEnv (Γ ► k).
-Proof. constructor; crush; eauto with ws. Qed.
+  Hint Resolve wfenv_covar_kind_left : ws.
+  Hint Resolve wfenv_covar_kind_right : ws.
+  Hint Resolve wfenv_tmvar_ty : ws.
+
+  Lemma WfEnv_nil : WfEnv nil.
+  Proof. constructor; inversion 1. Qed.
+
+  Lemma wfenv_snoc_tyvar {Γ} (wΓ: WfEnv Γ) : ∀ k, WfEnv (Γ ► k).
+  Proof. constructor; crush. Qed.
+
+  Lemma wfenv_snoc_tmvar {Γ} (wΓ: WfEnv Γ) :
+    ∀ τ, ⟨ Γ ⊢ τ ∷ kstar ⟩ → WfEnv (Γ ▻ τ).
+  Proof. constructor; crush. Qed.
+
+  Lemma wfenv_snoc_covar {Γ} (wΓ: WfEnv Γ) :
+    ∀ σ τ k, ⟨ Γ ⊢ σ ∷ k ⟩ → ⟨ Γ ⊢ τ ∷ k ⟩ → WfEnv (Γ ◅ σ ~ τ ∷ k).
+  Proof. constructor; crush. Qed.
+
+End WfEnv.
+
+Hint Resolve WfEnv_nil : ws.
 Hint Resolve wfenv_snoc_tyvar : ws.
+Hint Resolve wfenv_snoc_tmvar : ws.
+Hint Resolve wfenv_snoc_covar : ws.
 
-Lemma co_agreement {Γ γ σ τ k} (wΓ: WfEnv Γ) (wγ: ⟨ Γ ⊢ γ : σ ~ τ ∷ k ⟩) :
-  ⟨ Γ ⊢ σ ∷ k ⟩ ∧ ⟨ Γ ⊢ τ ∷ k ⟩.
-Proof.
-  induction wγ; intuition; crush;
-  match goal with
-    | [IH: WfEnv (?Γ ► ?k) → _ |- _] =>
-      enough (WfEnv (Γ ► k)); intuition; crush
-  end.
-Qed.
+Section Agreement.
 
-Lemma co_agreement_left {Γ γ σ τ k} (wΓ: WfEnv Γ) (wγ: ⟨ Γ ⊢ γ : σ ~ τ ∷ k ⟩) :
-  ⟨ Γ ⊢ σ ∷ k ⟩.
-Proof. eapply co_agreement; eauto with ws. Qed.
-Hint Resolve co_agreement_left : ws.
+  Hint Resolve wfenv_covar_kind_left : ws.
+  Hint Resolve wfenv_covar_kind_right : ws.
+  Hint Resolve wfenv_tmvar_ty : ws.
 
-Lemma co_agreement_right {Γ γ σ τ k} (wΓ: WfEnv Γ) (wγ: ⟨ Γ ⊢ γ : σ ~ τ ∷ k ⟩) :
-  ⟨ Γ ⊢ τ ∷ k ⟩.
-Proof. eapply co_agreement; eauto with ws. Qed.
-Hint Resolve co_agreement_right : ws.
+  Lemma co_agreement {Γ γ σ τ k} (wΓ: WfEnv Γ) (wγ: ⟨ Γ ⊢ γ : σ ~ τ ∷ k ⟩) :
+    ⟨ Γ ⊢ σ ∷ k ⟩ ∧ ⟨ Γ ⊢ τ ∷ k ⟩.
+  Proof. induction wγ; crush. Qed.
+
+  Lemma co_agreement_left {Γ γ σ τ k} (wΓ: WfEnv Γ) (wγ: ⟨ Γ ⊢ γ : σ ~ τ ∷ k ⟩) :
+    ⟨ Γ ⊢ σ ∷ k ⟩.
+  Proof. eapply co_agreement; eauto with ws. Qed.
+  Hint Resolve co_agreement_left : ws.
+
+  Lemma co_agreement_right {Γ γ σ τ k} (wΓ: WfEnv Γ) (wγ: ⟨ Γ ⊢ γ : σ ~ τ ∷ k ⟩) :
+    ⟨ Γ ⊢ τ ∷ k ⟩.
+  Proof. eapply co_agreement; eauto with ws. Qed.
+  Hint Resolve co_agreement_right : ws.
+
+  Lemma tm_agreement_ty {Γ t σ} (wΓ: WfEnv Γ) (wt: ⟨ Γ ⊢ t : σ ⟩) :
+    ⟨ Γ ⊢ σ ∷ kstar ⟩.
+  Proof. induction wt; crush. Qed.
+
+End Agreement.
 
 (******************************************************************************)
 

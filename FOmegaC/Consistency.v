@@ -11,6 +11,11 @@ Require Export Agreement.
 Definition CoVarClosed (Γ: Env) : Prop :=
   ∀ c σ τ k, ¬ ⟨ c : σ ~ τ ∷ k ∈ Γ ⟩.
 
+Lemma covarclosed_nil :
+  CoVarClosed nil.
+Proof. inversion 1. Qed.
+Hint Resolve covarclosed_nil : ws.
+
 Lemma covarclosed_up_tyvar {Γ k} :
   CoVarClosed Γ → CoVarClosed (Γ ► k).
 Proof.
@@ -27,7 +32,7 @@ Local Ltac crushCoVarLookup :=
         elimtype False; apply (clΓ _ _ _ _ H)
   end.
 
-Local Ltac crushIH :=
+Ltac crushIH :=
   repeat
     match goal with
       | [IH: WfEnv ?Γ → _ |- _ ] =>
@@ -297,12 +302,9 @@ Proof.
         apply coidm_covar; auto.
     + change (var 0) with (vr 0).
       rewrite <- up_def. constructor; crush.
-      * inversion H; crush.
-        rewrite <- ?(ap_wkm_ix (X:=Exp)).
-        change (var (S α0)) with (var α0)[wkm Ix].
+      * change (var (S i)) with (var i)[wkm Ix].
         eapply red_ren; crush.
-      * inversion H; crush.
-        rewrite <- ?(ap_wkm_ix (X:=Exp)).
+      * rewrite <- ?(ap_wkm_ix (X:=Exp)).
         eapply red_ren; crush.
         apply coidm_covar; auto.
     + constructor; crush.
@@ -411,8 +413,10 @@ Lemma complete_co_triangle {Γ γ σ τ k} (r: ⟨ Γ ⊢ γ : σ ↝ τ ∷ k �
   (wΓ: WfEnv Γ) (clΓ: CoVarClosed Γ) :
   ⟨ Γ ⊢ complete_co (dom Γ) γ : τ ↝ complete_ty σ ∷ k ⟩.
 Proof.
-  induction r; intuition; crush; eauto 10 with ws.
-  inversion r1; crush.
+  induction r; crush;
+    eauto 20 using red_co, co_agreement_right,
+    wtredsub_idm, wtredsub_snoc_tyvar, red_redsub with ws.
+  - inversion r1; crush.
 Qed.
 
 Lemma red_diamond {Γ σ γ η τ ν k} (wΓ: WfEnv Γ) (clΓ: CoVarClosed Γ)
@@ -440,7 +444,8 @@ Proof.
   induction wγs as [|σ τ τ' γs γ k wγs IHwγs wγ]; cbn.
   - exists ν; split.
     + exists η; crush.
-    + exists nil; crush.
+    + exists nil; crush;
+        eauto using red_co, co_agreement_right with ws.
   - (*      γs       γ
          σ   →   τ   →   τ'
 
@@ -467,8 +472,9 @@ Lemma red_confluence {Γ γs ηs σ τ ν k}
 Proof.
   induction wγs as [|σ τ τ' γs γ k wγs IHwγs wγ]; cbn.
   - exists ν; split.
-    + exists ηs; eauto with ws.
-    + exists nil; eauto with ws.
+    + exists ηs; crush.
+    + exists nil; crush;
+        eauto using redstar_co, co_agreement_right with ws.
   - specialize (IHwγs wηs).
     destruct IHwγs as (υ & (ηs' & wηs') & (γs' & wγs')).
     destruct (red_strip wΓ clΓ wηs' wγ) as (υ' & (γ' & wγ') & (ηs'' & wηs'')).
@@ -493,7 +499,11 @@ Lemma RsSubst₂ {Γ σ τγs τ τ' k1 k2} (wΓ: WfEnv Γ) :
   ⟨ Γ ► k1 ⊢ σ ∷ k2 ⟩ →
   ⟨ Γ ⊢ τγs : τ ↝* τ' ∷ k1 ⟩ →
   ⟨ Γ ⊢ rssubst₂ Γ σ τγs : σ[beta1 τ] ↝* σ[beta1 τ'] ∷ k2 ⟩.
-Proof. intros wσ wτγs; depind wτγs; crush. Qed.
+Proof.
+  intros wσ wτγs; depind wτγs; crush;
+  eauto 20 using red_co, co_agreement_right,
+    wtredsub_idm, wtredsub_snoc_tyvar, red_redsub with ws.
+Qed.
 Lemma RsSubst {Γ σγs σ σ' τγs τ τ' k1 k2} (wΓ: WfEnv Γ) :
   ⟨ Γ ► k1 ⊢ σγs : σ ↝* σ' ∷ k2 ⟩ →
   ⟨ Γ ⊢ τγs : τ ↝* τ' ∷ k1 ⟩ →
@@ -501,8 +511,8 @@ Lemma RsSubst {Γ σγs σ σ' τγs τ τ' k1 k2} (wΓ: WfEnv Γ) :
 Proof.
   intros.
   eapply RsTrans.
-  - eapply RsSubst₁; crush.
-  - eapply RsSubst₂; crush.
+  - eapply RsSubst₁; crush; eauto using redstar_co, co_agreement_left with ws.
+  - eapply RsSubst₂; crush; eauto using redstar_co, co_agreement_right with ws.
 Qed.
 
 Lemma co_red {Γ γ σ τ k} (wγ : ⟨ Γ ⊢ γ : σ ~ τ ∷ k⟩)
@@ -521,16 +531,16 @@ Proof.
     destruct IHwγ2 as (υ2 & (γs22 & wγ22) & (γs12 & wγ12)).
     exists (τapp υ1 υ2); split.
     + exists (rsτapp γs21 τ21 υ1 γs22 τ22 υ2).
-      eapply RsTApp; crush.
+      eapply RsTApp; crush; eauto using redstar_co, co_agreement_right.
     + exists (rsτapp γs11 τ11 υ1 γs12 τ12 υ2).
-      eapply RsTApp; crush.
+      eapply RsTApp; crush; eauto using redstar_co, co_agreement_left, co_agreement_right.
   - destruct IHwγ1 as (υ1 & (γs21 & wγ21) & (γs11 & wγ11)).
     destruct IHwγ2 as (υ2 & (γs22 & wγ22) & (γs12 & wγ12)).
     exists (arr υ1 υ2); split.
     + exists (rsarr γs21 τ21 υ1 γs22 τ22 υ2).
-      eapply RsArr; crush.
+      eapply RsArr; crush; eauto using redstar_co, co_agreement_right.
     + exists (rsarr γs11 τ11 υ1 γs12 τ12 υ2).
-      eapply RsArr; crush.
+      eapply RsArr; crush; eauto using redstar_co, co_agreement_left, co_agreement_right.
   - destruct IHwγ as (υ & (ηs & wηs) & (γs & wγs)).
     exists (arrτ k υ); split.
     + exists (rsarrτ k ηs).
@@ -542,9 +552,9 @@ Proof.
     destruct IHwγ3 as (υ3 & (γs3' & wγs3') & (γs3 & wγs3)).
     exists (arrγ υ1 υ2 k υ3); split.
     + exists (rsarrγ γs1' τ1' υ1 γs2' τ2' υ2 k γs3' τ3' υ3).
-      eapply RsArrG; crush.
+      eapply RsArrG; crush; eauto using redstar_co, co_agreement_left, co_agreement_right.
     + exists (rsarrγ γs1 τ1 υ1 γs2 τ2 υ2 k γs3 τ3 υ3).
-      eapply RsArrG; crush.
+      eapply RsArrG; crush; eauto using redstar_co, co_agreement_left, co_agreement_right.
   - destruct IHwγ as (? & (? & wηs) & (? & wγs)).
     apply arr_consistency in wγs; eauto.
     apply arr_consistency in wηs; eauto.
@@ -581,8 +591,8 @@ Proof.
     exists (υ1[beta1 υ2]); split.
     + exists (rssubst Γ γs1' τ1' υ1 γs2' τ2' υ2).
       eapply RsSubst; crush.
-    + exists (rsbeta k1 γs1 τ1 υ1 γs2 τ2 υ2).
-      eapply RsBeta; crush.
+    + exists (rsbeta k1 γs1 τ1 υ1 γs2 τ2 υ2); eapply RsBeta; crush;
+        eauto using redstar_co, co_agreement_left, co_agreement_right with ws.
   - exists τ; split.
     + exists nil; crush.
     + exists nil; crush.

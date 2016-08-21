@@ -231,12 +231,16 @@ Inductive Tm (Γ: Env) : Exp → Exp → Prop :=
   | Abs {s τ1 τ2} :
       ⟨ Γ ⊢ τ1 ∷ kstar ⟩ →
       ⟨ Γ ▻ τ1 ⊢ s : τ2[wkm] ⟩ →
+      ⟨ Γ ⊢ τ2 ∷ kstar ⟩ → (* Remove after adding strengthening lemmas *)
       ⟨ Γ ⊢ abs τ1 s : arr τ1 τ2 ⟩
   | Absτ {s τ k} :
       ⟨ Γ ► k ⊢ s : τ ⟩ →
       ⟨ Γ ⊢ absτ k s : arrτ k τ ⟩
   | Absγ {s τ1 τ2 τ3 k} :
       ⟨ Γ ◅ τ1 ~ τ2 ∷ k ⊢ s : τ3[wkm] ⟩ →
+      ⟨ Γ ⊢ τ1 ∷ k ⟩ →
+      ⟨ Γ ⊢ τ2 ∷ k ⟩ →
+      ⟨ Γ ⊢ τ3 ∷ kstar ⟩ → (* Remove after adding strengthening lemmas *)
       ⟨ Γ ⊢ absγ τ1 τ2 k s : arrγ τ1 τ2 k τ3 ⟩
   | App {s1 s2 τ1 τ2} :
       ⟨ Γ ⊢ s1 : arr τ1 τ2 ⟩ →

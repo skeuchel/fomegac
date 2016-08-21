@@ -78,6 +78,7 @@ Ltac crushTypingMatchH :=
     | [ H: ⟨ (S _) ∷ _ ∈ _ ⟩         |- _ ] => inversion H; clear H; subst*
     | [ H: ⟨ 0 : _ ~ _ ∷ _ ∈ _ ⟩     |- _ ] => inversion H; clear H; subst*
     | [ H: ⟨ (S _) : _ ~ _ ∷ _ ∈ _ ⟩ |- _ ] => inversion H; clear H; subst*
+    | [ H: ⟨ _ : _ ∈ nil ⟩           |- _ ] => inversion H; clear H; subst*
     | [ H: ⟨ _ ⊢ arr _ _ ∷ _ ⟩       |- _ ] => inversion H; clear H; subst*
     | [ H: ⟨ _ ⊢ arrτ _ _ ∷ _ ⟩      |- _ ] => inversion H; clear H; subst*
     | [ H: ⟨ _ ⊢ arrγ _ _ _ _ ∷ _ ⟩  |- _ ] => inversion H; clear H; subst*
@@ -88,6 +89,8 @@ Ltac crushTypingMatchH :=
     | [H: ⟨ _ ⊢ τapp _ _ ∷ _ ⟩ |- _ ] => inversion H; clear H; subst*
     | [H: ⟨ _ ⊢ coτabs _ _ : _ ↝ _ ∷ _ ⟩ |- _ ] => inversion H; clear H; subst*
     | [H: ⟨ _ ⊢ var _ : _ ↝ _ ∷ _ ⟩ |- _] => inversion H; clear H; subst*
+    | [H: ⟨ _ ⊢ cast _ _ : _ ⟩ |- _] => inversion H; clear H; subst*
+
     (* | H: ⟪ _ ⊢ var _        : _ ⟫ |- _ => inversion H; clear H *)
     (* | H: ⟪ _ ⊢ abs _ _      : _ ⟫ |- _ => inversion H; clear H *)
     (* | H: ⟪ _ ⊢ app _ _      : _ ⟫ |- _ => inversion H; clear H *)
@@ -106,16 +109,23 @@ Ltac crushTypingMatchH :=
     (* | [ wi : ⟪ ?i : _ ∈ (_ ▻ _) ⟫ *)
     (*     |- context [match ?i with _ => _ end] *)
     (*   ] => destruct i *)
-    | [ wi : ⟨ ?i : _ ∈ (_ ▻ _) ⟩ |- context [(_ · _) ?i] ] => destruct i eqn: ?; cbn in *
-    | [ wi : ⟨ ?i ∷ _ ∈ (_ ▻ _) ⟩ |- context [(_ · _) ?i] ] => destruct i eqn: ?; cbn in *
-    | [ wi : ⟨ ?i : _ ~ _ ∷ _ ∈ (_ ▻ _) ⟩ |- context [(_ · _) ?i] ] => destruct i eqn: ?; cbn in *
-    | [ wi : ⟨ ?i : _ ∈ (_ ► _) ⟩ |- context [(_ · _) ?i] ] => destruct i eqn: ?; cbn in *
-    | [ wi : ⟨ ?i ∷ _ ∈ (_ ► _) ⟩ |- context [(_ · _) ?i] ] => destruct i eqn: ?; cbn in *
-    | [ wi : ⟨ ?i : _ ~ _ ∷ _ ∈ (_ ► _) ⟩ |- context [(_ · _) ?i] ] => destruct i eqn: ?; cbn in *
-    | [ wi : ⟨ ?i : _ ∈ (_ ◅ _ ~ _ ∷ _) ⟩ |- context [(_ · _) ?i] ] => destruct i eqn: ?; cbn in *
-    | [ wi : ⟨ ?i ∷ _ ∈ (_ ◅ _ ~ _ ∷ _) ⟩ |- context [(_ · _) ?i] ] => destruct i eqn: ?; cbn in *
+    | [ wi : ⟨ ?i : _ ∈ (_ ▻ _) ⟩ |- _ ] => destruct i eqn: ?; cbn in *
+    | [ wi : ⟨ ?i ∷ _ ∈ (_ ▻ _) ⟩ |- _ ] => destruct i eqn: ?; cbn in *
+    | [ wi : ⟨ ?i : _ ~ _ ∷ _ ∈ (_ ▻ _) ⟩ |- _ ] => destruct i eqn: ?; cbn in *
+    | [ wi : ⟨ ?i : _ ∈ (_ ► _) ⟩ |- _ ] => destruct i eqn: ?; cbn in *
+    | [ wi : ⟨ ?i ∷ _ ∈ (_ ► _) ⟩ |- _ ] => destruct i eqn: ?; cbn in *
+    | [ wi : ⟨ ?i : _ ~ _ ∷ _ ∈ (_ ► _) ⟩ |- _ ] => destruct i eqn: ?; cbn in *
+    | [ wi : ⟨ ?i : _ ∈ (_ ◅ _ ~ _ ∷ _) ⟩ |- _ ] => destruct i eqn: ?; cbn in *
+    | [ wi : ⟨ ?i ∷ _ ∈ (_ ◅ _ ~ _ ∷ _) ⟩ |- _ ] => destruct i eqn: ?; cbn in *
     | [ wi : ⟨ ?i : _ ~ _ ∷ _ ∈ (_ ► _) ⟩ |- _ ] => inversion wi; clear wi
-    | [ wi : ⟨ ?i : _ ~ _ ∷ _ ∈ (_ ◅ _ ~ _ ∷ _) ⟩ |- context [(_ · _) ?i] ] => destruct i eqn: ?; cbn in *
+    | [ wi : ⟨ ?i : _ ~ _ ∷ _ ∈ (_ ◅ _ ~ _ ∷ _) ⟩ |- _ ] => destruct i eqn: ?; cbn in *
+
+    | [ |- ⟨ _ ⊢ (_ :: _) : _ ↝* _ ∷ _ ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ nil : _ ↝* _ ∷ _ ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ coarrγ _ _ _ _ : _ ↝ _ ∷ _ ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ _ : arrγ _ _ _ _ ↝ _ ∷ _ ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ cotrans _ _ : _ ~ _ ∷ _ ⟩ ] => econstructor
+
     (* | [ wi : ⟨ ?i : _ ∈ (_ ► _) ⟩ *)
     (*     |- context [(_ · _) ?i] *)
     (*   ] => destruct i eqn: ?; cbn in * *)
@@ -329,7 +339,7 @@ Proof.
     rewrite apply_wkm_comm.
     rewrite ap_wkm_ix.
     apply IHwt; crush.
-  - constructor.
+  - constructor; crush.
     rewrite <- ap_wkm_ix.
     rewrite apply_wkm_comm.
     rewrite ap_wkm_ix.

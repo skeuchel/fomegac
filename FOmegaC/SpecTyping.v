@@ -147,7 +147,7 @@ Inductive Co (Γ: Env) : Exp → Exp → Exp → Kind → Prop :=
   | CoBeta {γ1 γ2 τ1 τ2 τ1' τ2' k1 k2} :
       ⟨ Γ ► k1 ⊢ γ1 : τ1 ~ τ1' ∷ k2 ⟩ →
       ⟨ Γ ⊢ γ2 : τ2 ~ τ2' ∷ k1 ⟩ →
-      ⟨ Γ ⊢ cobeta γ1 γ2 : τapp (τabs k1 τ1) τ2 ~ τ1'[beta1 τ2'] ∷ k2 ⟩
+      ⟨ Γ ⊢ cobeta k1 γ1 γ2 : τapp (τabs k1 τ1) τ2 ~ τ1'[beta1 τ2'] ∷ k2 ⟩
   | CoRefl {τ k} :
       ⟨ Γ ⊢ τ ∷ k ⟩ →
       ⟨ Γ ⊢ corefl τ : τ ~ τ ∷ k ⟩
@@ -194,10 +194,10 @@ Inductive Red (Γ: Env) : Exp → Exp → Exp → Kind → Prop :=
   | RedBeta {γ1 γ2 τ1 τ2 τ1' τ2' k1 k2} :
       ⟨ Γ ► k1 ⊢ γ1 : τ1 ↝ τ1' ∷ k2 ⟩ →
       ⟨ Γ ⊢ γ2 : τ2 ↝ τ2' ∷ k1 ⟩ →
-      ⟨ Γ ⊢ cobeta γ1 γ2 : τapp (τabs k1 τ1) τ2 ↝ τ1'[beta1 τ2'] ∷ k2 ⟩
-  | RedRefl {τ k} :
-      ⟨ Γ ⊢ τ ∷ k ⟩ →
-      ⟨ Γ ⊢ corefl τ : τ ↝ τ ∷ k ⟩
+      ⟨ Γ ⊢ cobeta k1 γ1 γ2 : τapp (τabs k1 τ1) τ2 ↝ τ1'[beta1 τ2'] ∷ k2 ⟩
+  | RedReflVar {α k} :
+      ⟨ α ∷ k ∈ Γ ⟩ →
+      ⟨ Γ ⊢ corefl (var α) : var α ↝ var α ∷ k ⟩
 where "⟨ Γ ⊢ γ : τ1 ↝ τ2 ∷ k ⟩" := (Red Γ γ τ1 τ2 k).
 
 Reserved Notation "⟨ Γ ⊢ γs : τ1 ↝* τ2 ∷ k ⟩"

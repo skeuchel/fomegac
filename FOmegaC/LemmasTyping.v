@@ -72,18 +72,22 @@ Hint Resolve wts_tmvar : ws.
 
 Ltac crushTypingMatchH :=
   match goal with
-    | [ H: ⟨ 0 : _ ∈ _ ⟩         |- _ ] =>
-      inversion H; clear H; subst*
-    | [ H: ⟨ (S _) : _ ∈ _ ⟩ |- _ ] =>
-      inversion H; clear H; subst*
-    | [ H: ⟨ 0 ∷ _ ∈ _ ⟩         |- _ ] =>
-      inversion H; clear H; subst*
-    | [ H: ⟨ (S _) ∷ _ ∈ _ ⟩ |- _ ] =>
-      inversion H; clear H; subst*
-    | [ H: ⟨ 0 : _ ~ _ ∷ _ ∈ _ ⟩         |- _ ] =>
-      inversion H; clear H; subst*
-    | [ H: ⟨ (S _) : _ ~ _ ∷ _ ∈ _ ⟩ |- _ ] =>
-      inversion H; clear H; subst*
+    | [ H: ⟨ 0 : _ ∈ _ ⟩             |- _ ] => inversion H; clear H; subst*
+    | [ H: ⟨ (S _) : _ ∈ _ ⟩         |- _ ] => inversion H; clear H; subst*
+    | [ H: ⟨ 0 ∷ _ ∈ _ ⟩             |- _ ] => inversion H; clear H; subst*
+    | [ H: ⟨ (S _) ∷ _ ∈ _ ⟩         |- _ ] => inversion H; clear H; subst*
+    | [ H: ⟨ 0 : _ ~ _ ∷ _ ∈ _ ⟩     |- _ ] => inversion H; clear H; subst*
+    | [ H: ⟨ (S _) : _ ~ _ ∷ _ ∈ _ ⟩ |- _ ] => inversion H; clear H; subst*
+    | [ H: ⟨ _ ⊢ arr _ _ ∷ _ ⟩       |- _ ] => inversion H; clear H; subst*
+    | [ H: ⟨ _ ⊢ arrτ _ _ ∷ _ ⟩      |- _ ] => inversion H; clear H; subst*
+    | [ H: ⟨ _ ⊢ arrγ _ _ _ _ ∷ _ ⟩  |- _ ] => inversion H; clear H; subst*
+    | [ H: ⟨ _ ⊢ τabs _ _ ∷ _ ⟩      |- _ ] => inversion H; clear H; subst*
+    | [H: ⟨ _ ⊢ _ : arr _ _ ↝ _ ∷ _ ⟩ |- _ ] => inversion H; clear H; subst*
+    | [H: ⟨ _ ⊢ _ : arrτ _ _ ↝ _ ∷ _ ⟩ |- _ ] => inversion H; clear H; subst*
+    | [H: ⟨ _ ⊢ _ : arrγ _ _ _ _ ↝ _ ∷ _ ⟩ |- _ ] => inversion H; clear H; subst*
+    | [H: ⟨ _ ⊢ τapp _ _ ∷ _ ⟩ |- _ ] => inversion H; clear H; subst*
+    | [H: ⟨ _ ⊢ coτabs _ _ : _ ↝ _ ∷ _ ⟩ |- _ ] => inversion H; clear H; subst*
+    | [H: ⟨ _ ⊢ var _ : _ ↝ _ ∷ _ ⟩ |- _] => inversion H; clear H; subst*
     (* | H: ⟪ _ ⊢ var _        : _ ⟫ |- _ => inversion H; clear H *)
     (* | H: ⟪ _ ⊢ abs _ _      : _ ⟫ |- _ => inversion H; clear H *)
     (* | H: ⟪ _ ⊢ app _ _      : _ ⟫ |- _ => inversion H; clear H *)
@@ -110,6 +114,7 @@ Ltac crushTypingMatchH :=
     | [ wi : ⟨ ?i : _ ~ _ ∷ _ ∈ (_ ► _) ⟩ |- context [(_ · _) ?i] ] => destruct i eqn: ?; cbn in *
     | [ wi : ⟨ ?i : _ ∈ (_ ◅ _ ~ _ ∷ _) ⟩ |- context [(_ · _) ?i] ] => destruct i eqn: ?; cbn in *
     | [ wi : ⟨ ?i ∷ _ ∈ (_ ◅ _ ~ _ ∷ _) ⟩ |- context [(_ · _) ?i] ] => destruct i eqn: ?; cbn in *
+    | [ wi : ⟨ ?i : _ ~ _ ∷ _ ∈ (_ ► _) ⟩ |- _ ] => inversion wi; clear wi
     | [ wi : ⟨ ?i : _ ~ _ ∷ _ ∈ (_ ◅ _ ~ _ ∷ _) ⟩ |- context [(_ · _) ?i] ] => destruct i eqn: ?; cbn in *
     (* | [ wi : ⟨ ?i : _ ∈ (_ ► _) ⟩ *)
     (*     |- context [(_ · _) ?i] *)
@@ -142,7 +147,7 @@ Local Ltac crush :=
   intros;
   repeat
     (cbn in *;
-     (* repeat crushStlcSyntaxMatchH; *)
+     repeat crushSyntaxMatch;
      repeat crushDbSyntaxMatchH;
      repeat crushDbLemmasRewriteH;
      repeat crushSyntaxRefold;
@@ -152,17 +157,6 @@ Local Ltac crush :=
      eauto 200 with core ws;
      idtac
     ).
-
-Lemma red_co {Γ γ σ τ k} :
-  ⟨ Γ ⊢ γ : σ ↝ τ ∷ k ⟩ →
-  ⟨ Γ ⊢ γ : σ ~ τ ∷ k ⟩.
-Proof. induction 1; crush. Qed.
-Hint Resolve red_co : ws.
-
-Lemma redstar_co {Γ γs σ τ k} :
-  ⟨ Γ ⊢ γs : σ ↝* τ ∷ k ⟩ →
-  ⟨ Γ ⊢ fold_right (fun γ2 γ1 => cotrans γ1 γ2) (corefl σ) γs : σ ~ τ ∷ k ⟩.
-Proof. induction 1; crush. Qed.
 
 (*************************************************************************)
 
@@ -499,149 +493,3 @@ Proof.
   - econstructor; crush.
 Qed.
 Hint Resolve tm_sub : ws.
-
-(*************************************************************************)
-
-Record WtCoSub (Γ Δ: Env) (ζγ ζγi ζ1 ζ2: Sub Exp) : Prop :=
-  { wcs_tyvar : ∀ {α k},
-                  ⟨ α ∷ k ∈ Γ ⟩ →
-                  ⟨ Δ ⊢ ζγ α : ζ1 α ~ ζ2 α ∷ k ⟩;
-    wcs_covar : ∀ {c τ1 τ2 k},
-                  ⟨ c : τ1 ~ τ2 ∷ k ∈ Γ ⟩ →
-                  ⟨ Δ ⊢ ζγ c : τ1[ζ1] ~ τ2[ζ2] ∷ k ⟩;
-    wcs_tyvari : ∀ {α k},
-                  ⟨ α ∷ k ∈ Γ ⟩ →
-                  ⟨ Δ ⊢ ζγi α : ζ2 α ~ ζ1 α ∷ k ⟩;
-    wcs_covari : ∀ {c τ1 τ2 k},
-                  ⟨ c : τ1 ~ τ2 ∷ k ∈ Γ ⟩ →
-                  ⟨ Δ ⊢ ζγi c : τ1[ζ2] ~ τ2[ζ1] ∷ k ⟩;
-    wcs_left :> ⟨ ζ1 : Γ => Δ ⟩;
-    wcs_right :> ⟨ ζ2 : Γ => Δ ⟩;
-  }.
-
-Hint Resolve wcs_tyvar : ws.
-Hint Resolve wcs_covar : ws.
-Hint Resolve wcs_tyvari : ws.
-Hint Resolve wcs_covari : ws.
-Hint Resolve wcs_left : ws.
-Hint Resolve wcs_right : ws.
-
-(* Lemma wtSub_wkm_tyvar Γ k : *)
-(*   ⟨ wkm Exp : Γ => Γ ► k ⟩. *)
-(* Proof. constructor; crush. Qed. *)
-(* Hint Resolve wtSub_wkm_tyvar : ws. *)
-
-(* Lemma wtSub_wkm_covar Γ τ1 τ2 k : *)
-(*   ⟨ wkm Exp : Γ => Γ ◅ τ1 ~ τ2 ∷ k ⟩. *)
-(* Proof. constructor; crush. Qed. *)
-(* Hint Resolve wtSub_wkm_covar : ws. *)
-
-Definition upCoSub (ζγ: Sub Exp) : Sub Exp :=
-  ((ζγ >=> wkm Exp) · corefl (var 0)).
-
-Lemma wtCoSub_up_tyvar {Γ Δ ζγ ζγi ζ1 ζ2} (wζ: WtCoSub Γ Δ ζγ ζγi ζ1 ζ2) :
-  ∀ k, WtCoSub (Γ ► k) (Δ ► k) (upCoSub ζγ) (upCoSub ζγi) ζ1↑ ζ2↑.
-Proof.
-  rewrite ?up_def.
-  constructor; intros.
-  - inversion H; clear H; crush.
-  - inversion H; clear H; crush.
-    rewrite ?ap_comp.
-    rewrite ?wkm_snoc_cancel.
-    rewrite <- ?ap_comp.
-    rewrite <- ?(ap_wkm_ix (X:=Exp)).
-    crush.
-  - inversion H; clear H; crush.
-  - inversion H; clear H; crush.
-    rewrite ?ap_comp.
-    rewrite ?wkm_snoc_cancel.
-    rewrite <- ?ap_comp.
-    rewrite <- ?(ap_wkm_ix (X:=Exp)).
-    crush.
-  - rewrite <- ?up_def; crush.
-  - rewrite <- ?up_def; crush.
-Qed.
-Hint Resolve wtCoSub_up_tyvar : ws.
-
-Fixpoint apCoSub (ζγ ζγi ζ1 ζ2: Sub Exp) (τ: Exp) {struct τ} : Exp :=
-  match τ with
-    | var α              =>  ζγ α
-    | τabs k τ           =>  coτabs k (apCoSub (upCoSub ζγ) (upCoSub ζγi) ζ1↑ ζ2↑ τ)
-    | τapp τ1 τ2         =>  coτapp (apCoSub ζγ ζγi ζ1 ζ2 τ1) (apCoSub ζγ ζγi ζ1 ζ2 τ2)
-    | arr  τ1 τ2         =>  coarr  (apCoSub ζγ ζγi ζ1 ζ2 τ1) (apCoSub ζγ ζγi ζ1 ζ2 τ2)
-    | arrτ k τ           =>  coarrτ k (apCoSub (upCoSub ζγ) (upCoSub ζγi) ζ1↑ ζ2↑ τ)
-    | arrγ τ1 τ2 k τ3    =>  coarrγ (apCoSub ζγ ζγi ζ1 ζ2 τ1) (apCoSub ζγ ζγi ζ1 ζ2 τ2) k (apCoSub ζγ ζγi ζ1 ζ2 τ3)
-    | coτabs k γ         =>  coτabs k (apCoSub (upCoSub ζγ) (upCoSub ζγi) ζ1↑ ζ2↑ γ)
-    | coτapp γ1 γ2       =>  coτapp (apCoSub ζγ ζγi ζ1 ζ2 γ1) (apCoSub ζγ ζγi ζ1 ζ2 γ2)
-    | coarr  γ1 γ2       =>  coarr  (apCoSub ζγ ζγi ζ1 ζ2 γ1) (apCoSub ζγ ζγi ζ1 ζ2 γ2)
-    | coarrτ k γ         =>  coarrτ k (apCoSub (upCoSub ζγ) (upCoSub ζγi) ζ1↑ ζ2↑ γ)
-    | coarrγ γ1 γ2 k γ3  =>  coarrγ (apCoSub ζγ ζγi ζ1 ζ2 γ1) (apCoSub ζγ ζγi ζ1 ζ2 γ2) k (apCoSub ζγ ζγi ζ1 ζ2 γ3)
-    | coinvarr₁ γ        =>  coinvarr₁ (apCoSub ζγ ζγi ζ1 ζ2 γ)
-    | coinvarr₂ γ        =>  coinvarr₂ (apCoSub ζγ ζγi ζ1 ζ2 γ)
-    | coinvarrτ γ1 γ2    =>  coinvarrτ (apCoSub ζγ ζγi ζ1 ζ2 γ1) (apCoSub ζγ ζγi ζ1 ζ2 γ2)
-    | coinvarrγ₁ γ       =>  coinvarrγ₁ (apCoSub ζγ ζγi ζ1 ζ2 γ)
-    | coinvarrγ₂ γ       =>  coinvarrγ₂ (apCoSub ζγ ζγi ζ1 ζ2 γ)
-    | coinvarrγ₃ γ       =>  coinvarrγ₃ (apCoSub ζγ ζγi ζ1 ζ2 γ)
-    | cobeta γ1 γ2       =>  cobeta (apCoSub (upCoSub ζγ) (upCoSub ζγi) ζ1↑ ζ2↑ γ1) (apCoSub ζγ ζγi ζ1 ζ2 γ2)
-    | corefl τ           =>  apCoSub ζγ ζγi ζ1 ζ2 τ
-    | cosym γ            =>  cosym (apCoSubSym ζγ ζγi ζ1 ζ2 γ)
-    | cotrans γ1 γ2      =>  cotrans (apCoSub ζγ ζγi ζ1 ζ2 γ1) γ2[ζ2]
-    | _ => var 0
-  end
-with apCoSubSym (ζγ ζγi ζ1 ζ2: Sub Exp) (τ: Exp) {struct τ} : Exp :=
-  match τ with
-    | var α              =>  ζγi α
-    | τabs k τ           =>  coτabs k (apCoSubSym (upCoSub ζγ) (upCoSub ζγi) ζ1↑ ζ2↑ τ)
-    | τapp τ1 τ2         =>  coτapp (apCoSubSym ζγ ζγi ζ1 ζ2 τ1) (apCoSubSym ζγ ζγi ζ1 ζ2 τ2)
-    | arr  τ1 τ2         =>  coarr  (apCoSubSym ζγ ζγi ζ1 ζ2 τ1) (apCoSubSym ζγ ζγi ζ1 ζ2 τ2)
-    | arrτ k τ           =>  coarrτ k (apCoSubSym (upCoSub ζγ) (upCoSub ζγi) ζ1↑ ζ2↑ τ)
-    | arrγ τ1 τ2 k τ3    =>  coarrγ (apCoSubSym ζγ ζγi ζ1 ζ2 τ1) (apCoSubSym ζγ ζγi ζ1 ζ2 τ2) k (apCoSubSym ζγ ζγi ζ1 ζ2 τ3)
-    | coτabs k γ         =>  coτabs k (apCoSubSym (upCoSub ζγ) (upCoSub ζγi) ζ1↑ ζ2↑ γ)
-    | coτapp γ1 γ2       =>  coτapp (apCoSubSym ζγ ζγi ζ1 ζ2 γ1) (apCoSubSym ζγ ζγi ζ1 ζ2 γ2)
-    | coarr  γ1 γ2       =>  coarr  (apCoSubSym ζγ ζγi ζ1 ζ2 γ1) (apCoSubSym ζγ ζγi ζ1 ζ2 γ2)
-    | coarrτ k γ         =>  coarrτ k (apCoSubSym (upCoSub ζγ) (upCoSub ζγi) ζ1↑ ζ2↑ γ)
-    | coarrγ γ1 γ2 k γ3  =>  coarrγ (apCoSubSym ζγ ζγi ζ1 ζ2 γ1) (apCoSubSym ζγ ζγi ζ1 ζ2 γ2) k (apCoSubSym ζγ ζγi ζ1 ζ2 γ3)
-    | coinvarr₁ γ        =>  coinvarr₁ (apCoSubSym ζγ ζγi ζ1 ζ2 γ)
-    | coinvarr₂ γ        =>  coinvarr₂ (apCoSubSym ζγ ζγi ζ1 ζ2 γ)
-    | coinvarrτ γ1 γ2    =>  coinvarrτ (apCoSubSym ζγ ζγi ζ1 ζ2 γ1) (apCoSubSym ζγ ζγi ζ1 ζ2 γ2)
-    | coinvarrγ₁ γ       =>  coinvarrγ₁ (apCoSubSym ζγ ζγi ζ1 ζ2 γ)
-    | coinvarrγ₂ γ       =>  coinvarrγ₂ (apCoSubSym ζγ ζγi ζ1 ζ2 γ)
-    | coinvarrγ₃ γ       =>  coinvarrγ₃ (apCoSubSym ζγ ζγi ζ1 ζ2 γ)
-    | cobeta γ1 γ2       =>  cobeta (apCoSubSym (upCoSub ζγ) (upCoSub ζγi) ζ1↑ ζ2↑ γ1) (apCoSubSym ζγ ζγi ζ1 ζ2 γ2)
-    | corefl τ           =>  apCoSubSym ζγ ζγi ζ1 ζ2 τ
-    | cosym γ            =>  cosym (apCoSub ζγ ζγi ζ1 ζ2 γ)
-    | cotrans γ1 γ2      =>  cotrans γ1[ζ2] (apCoSubSym ζγ ζγi ζ1 ζ2 γ2)
-    | _ => var 0
-  end.
-
-Lemma ty_cosub {Γ τ k} (wτ: ⟨ Γ ⊢ τ ∷ k ⟩) :
-  ∀ Δ ζγ ζγi ζ1 ζ2,
-    WtCoSub Γ Δ ζγ ζγi ζ1 ζ2 →
-    ⟨ Δ ⊢ apCoSub ζγ ζγi ζ1 ζ2 τ : τ[ζ1] ~ τ[ζ2] ∷ k ⟩
-with ty_cosubsym {Γ τ k} (wτ: ⟨ Γ ⊢ τ ∷ k ⟩) :
-  ∀ Δ ζγ ζγi ζ1 ζ2,
-    WtCoSub Γ Δ ζγ ζγi ζ1 ζ2 →
-    ⟨ Δ ⊢ apCoSubSym ζγ ζγi ζ1 ζ2 τ : τ[ζ2] ~ τ[ζ1] ∷ k ⟩.
-Proof.
-  - induction wτ; crush.
-  - induction wτ; crush.
-Qed.
-Hint Resolve ty_cosub : ws.
-Hint Resolve ty_cosubsym : ws.
-
-Lemma co_cosub {Γ γ τ1 τ2 k} (wγ: ⟨ Γ ⊢ γ : τ1 ~ τ2 ∷ k ⟩) :
-  ∀ Δ ζγ ζγi ζ1 ζ2,
-    WtCoSub Γ Δ ζγ ζγi ζ1 ζ2 →
-    ⟨ Δ ⊢ apCoSub ζγ ζγi ζ1 ζ2 γ : τ1[ζ1] ~ τ2[ζ2] ∷ k ⟩
-with co_cosubsym {Γ γ τ1 τ2 k} (wγ: ⟨ Γ ⊢ γ : τ1 ~ τ2 ∷ k ⟩) :
-  ∀ Δ ζγ ζγi ζ1 ζ2,
-    WtCoSub Γ Δ ζγ ζγi ζ1 ζ2 →
-    ⟨ Δ ⊢ apCoSubSym ζγ ζγi ζ1 ζ2 γ : τ1[ζ2] ~ τ2[ζ1] ∷ k ⟩.
-Proof.
-  - induction wγ; crush.
-  - induction wγ; crush.
-Qed.
-Hint Resolve co_cosub : ws.
-Hint Resolve co_cosubsym : ws.
-
-(*************************************************************************)

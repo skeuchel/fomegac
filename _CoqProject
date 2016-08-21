@@ -8,3 +8,5 @@ FOmegaC/SpecEvaluation.v
 FOmegaC/SpecSyntax.v
 FOmegaC/SpecTyping.v
 FOmegaC/LemmasTyping.v
+FOmegaC/Agreement.v
+FOmegaC/Consistency.v

@@ -31,7 +31,7 @@ Inductive Exp : Type :=
   | coinvarrγ₁ (γ: Exp)
   | coinvarrγ₂ (γ: Exp)
   | coinvarrγ₃ (γ: Exp)
-  | cobeta     (γ1 γ2: Exp)
+  | cobeta     k (γ1 γ2: Exp)
   | corefl     (τ: Exp)
   | cosym      (γ: Exp)
   | cotrans    (γ1 γ2: Exp)
@@ -96,7 +96,7 @@ Section DeBruijn.
       | coinvarrγ₁ γ     =>  coinvarrγ₁ γ[ζ]
       | coinvarrγ₂ γ     =>  coinvarrγ₂ γ[ζ]
       | coinvarrγ₃ γ     =>  coinvarrγ₃ γ[ζ]
-      | cobeta γ1 γ2     =>  cobeta γ1[ζ↑] γ2[ζ]
+      | cobeta k γ1 γ2   =>  cobeta k γ1[ζ↑] γ2[ζ]
       | corefl τ         =>  corefl τ[ζ]
       | cosym γ          =>  cosym γ[ζ]
       | cotrans γ1 γ2    =>  cotrans γ1[ζ] γ2[ζ]
@@ -125,10 +125,65 @@ Proof. inversion 1; auto. Defined.
 
 Ltac crushSyntaxMatch :=
   match goal with
-    | [H: cons _ _ = cons _ _ |- _ ] =>
-      inversion H; clear H
-    | [ |- cons _ _ = cons _ _ ] =>
-      f_equal
+    | [H: cons _ _       = cons _ _       |- _] => inversion H; clear H; subst*
+    | [H: var _          = var _          |- _] => inversion H; clear H; subst*
+    | [H: τabs _ _       = τabs _ _       |- _] => inversion H; clear H; subst*
+    | [H: τapp _ _       = τapp _ _       |- _] => inversion H; clear H; subst*
+    | [H: arr _ _        = arr _ _        |- _] => inversion H; clear H; subst*
+    | [H: arrτ _ _       = arrτ _ _       |- _] => inversion H; clear H; subst*
+    | [H: arrγ _ _ _ _   = arrγ _ _ _ _   |- _] => inversion H; clear H; subst*
+    | [H: coτabs _ _     = coτabs _ _     |- _] => inversion H; clear H; subst*
+    | [H: coτapp _ _     = coτapp _ _     |- _] => inversion H; clear H; subst*
+    | [H: coarr _ _      = coarr _ _      |- _] => inversion H; clear H; subst*
+    | [H: coarrτ _ _     = coarrτ _ _     |- _] => inversion H; clear H; subst*
+    | [H: coarrγ _ _ _ _ = coarrγ _ _ _ _ |- _] => inversion H; clear H; subst*
+    | [H: coinvarr₁ _    = coinvarr₁ _    |- _] => inversion H; clear H; subst*
+    | [H: coinvarr₂ _    = coinvarr₂ _    |- _] => inversion H; clear H; subst*
+    | [H: coinvarrτ _ _  = coinvarrτ _ _  |- _] => inversion H; clear H; subst*
+    | [H: coinvarrγ₁ _   = coinvarrγ₁ _   |- _] => inversion H; clear H; subst*
+    | [H: coinvarrγ₂ _   = coinvarrγ₂ _   |- _] => inversion H; clear H; subst*
+    | [H: coinvarrγ₃ _   = coinvarrγ₃ _   |- _] => inversion H; clear H; subst*
+    | [H: cobeta _ _     = cobeta _ _     |- _] => inversion H; clear H; subst*
+    | [H: corefl _       = corefl _       |- _] => inversion H; clear H; subst*
+    | [H: cosym _        = cosym _        |- _] => inversion H; clear H; subst*
+    | [H: cotrans _ _    = cotrans _ _    |- _] => inversion H; clear H; subst*
+    | [H: abs _ _        = abs _ _        |- _] => inversion H; clear H; subst*
+    | [H: absτ _ _       = absτ _ _       |- _] => inversion H; clear H; subst*
+    | [H: absγ _ _ _ _   = absγ _ _ _ _   |- _] => inversion H; clear H; subst*
+    | [H: app _ _        = app _ _        |- _] => inversion H; clear H; subst*
+    | [H: appτ _ _       = appτ _ _       |- _] => inversion H; clear H; subst*
+    | [H: appγ _ _       = appγ _ _       |- _] => inversion H; clear H; subst*
+    | [H: cast _ _       = cast _ _       |- _] => inversion H; clear H; subst*
+
+    | [ |- cons _ _       = cons _ _       ] => f_equal
+    | [ |- var _          = var _          ] => f_equal
+    | [ |- τabs _ _       = τabs _ _       ] => f_equal
+    | [ |- τapp _ _       = τapp _ _       ] => f_equal
+    | [ |- arr _ _        = arr _ _        ] => f_equal
+    | [ |- arrτ _ _       = arrτ _ _       ] => f_equal
+    | [ |- arrγ _ _ _ _   = arrγ _ _ _ _   ] => f_equal
+    | [ |- coτabs _ _     = coτabs _ _     ] => f_equal
+    | [ |- coτapp _ _     = coτapp _ _     ] => f_equal
+    | [ |- coarr _ _      = coarr _ _      ] => f_equal
+    | [ |- coarrτ _ _     = coarrτ _ _     ] => f_equal
+    | [ |- coarrγ _ _ _ _ = coarrγ _ _ _ _ ] => f_equal
+    | [ |- coinvarr₁ _    = coinvarr₁ _    ] => f_equal
+    | [ |- coinvarr₂ _    = coinvarr₂ _    ] => f_equal
+    | [ |- coinvarrτ _ _  = coinvarrτ _ _  ] => f_equal
+    | [ |- coinvarrγ₁ _   = coinvarrγ₁ _   ] => f_equal
+    | [ |- coinvarrγ₂ _   = coinvarrγ₂ _   ] => f_equal
+    | [ |- coinvarrγ₃ _   = coinvarrγ₃ _   ] => f_equal
+    | [ |- cobeta _ _     = cobeta _ _     ] => f_equal
+    | [ |- corefl _       = corefl _       ] => f_equal
+    | [ |- cosym _        = cosym _        ] => f_equal
+    | [ |- cotrans _ _    = cotrans _ _    ] => f_equal
+    | [ |- abs _ _        = abs _ _        ] => f_equal
+    | [ |- absτ _ _       = absτ _ _       ] => f_equal
+    | [ |- absγ _ _ _ _   = absγ _ _ _ _   ] => f_equal
+    | [ |- app _ _        = app _ _        ] => f_equal
+    | [ |- appτ _ _       = appτ _ _       ] => f_equal
+    | [ |- appγ _ _       = appγ _ _       ] => f_equal
+    | [ |- cast _ _       = cast _ _       ] => f_equal
   end.
 
 Ltac crushSyntaxRefold :=

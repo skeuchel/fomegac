@@ -11,3 +11,4 @@ FOmegaC/LemmasTyping.v
 FOmegaC/Agreement.v
 FOmegaC/Consistency.v
 FOmegaC/Progress.v
+FOmegaC/Preservation.v

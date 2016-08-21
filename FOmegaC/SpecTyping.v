@@ -143,7 +143,7 @@ Inductive Co (Γ: Env) : Exp → Exp → Exp → Kind → Prop :=
       ⟨ Γ ⊢ coinvarrγ₂ γ : τ2 ~ τ2' ∷ k ⟩
   | CoInvArrγ₃ {γ τ1 τ1' τ2 τ2' τ3 τ3' k} :
       ⟨ Γ ⊢ γ : arrγ τ1 τ2 k τ3 ~ arrγ τ1' τ2' k τ3' ∷ kstar ⟩ →
-      ⟨ Γ ⊢ coinvarrγ₂ γ : τ3 ~ τ3' ∷ kstar ⟩
+      ⟨ Γ ⊢ coinvarrγ₃ γ : τ3 ~ τ3' ∷ kstar ⟩
   | CoBeta {γ1 γ2 τ1 τ2 τ1' τ2' k1 k2} :
       ⟨ Γ ► k1 ⊢ γ1 : τ1 ~ τ1' ∷ k2 ⟩ →
       ⟨ Γ ⊢ γ2 : τ2 ~ τ2' ∷ k1 ⟩ →

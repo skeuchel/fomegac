@@ -5,7 +5,15 @@ Require Export SpecTyping.
 (* Evaluation.                                                           *)
 (*************************************************************************)
 
-Definition Value (t: Exp) : Prop :=
+Definition UValue (t: Exp) : Prop :=
+  match t with
+    | abs τ s        => True
+    | absτ k s       => True
+    | absγ τ1 τ2 k s => True
+    | _              => False
+  end.
+
+Definition Value (t: Exp): Prop :=
   match t with
     | abs τ s        => True
     | absτ k s       => True
@@ -15,7 +23,6 @@ Definition Value (t: Exp) : Prop :=
     | cast (absγ τ1 τ2 k s) γ => True
     | _              => False
   end.
-
 
 
 (* Reserved Notation "γ ──> γ'" (at level 55). *)
@@ -129,19 +136,22 @@ Inductive eval : Exp → Exp → Prop :=
   | eval_betaτ {t τ k} :
       appτ (absτ k t) τ --> t[beta1 τ]
   | eval_appγ {t t' γ} :
-      t --> t' → appγ t γ --> appτ t' γ
+      t --> t' → appγ t γ --> appγ t' γ
   | eval_betaγ {t γ τ1 τ2 k} :
       appγ (absγ τ1 τ2 k t) γ --> t[beta1 γ]
   | eval_cast {t t' γ} :
       t --> t' →
       cast t γ --> cast t' γ
   | eval_push_app_cast {t1 t2 γ} :
+      UValue t1 →
       app (cast t1 γ) t2 -->
         cast (app t1 (cast t2 (cosym (coinvarr₁ γ)))) (coinvarr₂ γ)
   | eval_push_appτ_cast {t τ γ} :
+      UValue t →
       appτ (cast t γ) τ -->
         cast (appτ t τ) (coinvarrτ γ (corefl τ))
   | eval_push_appγ_cast {t γ γ'} :
+      UValue t →
       appγ (cast t γ) γ' -->
         cast (appγ t (cotrans (coinvarrγ₁ γ) (cotrans γ' (cosym (coinvarrγ₂ γ))))) (coinvarrγ₃ γ)
      (*    appγ t (nth¹ γ ; γ' ; sym (nth² γ)) ▹ nth³ γ *)

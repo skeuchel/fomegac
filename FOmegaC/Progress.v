@@ -26,21 +26,6 @@ Local Ltac crush :=
      idtac
     ).
 
-Ltac canForm :=
-  repeat
-    (match goal with
-       | [H: ⟨ _ ⊢ _ : _ ~ _ ∷ _ ⟩ |- _] =>
-         eapply co_red in H
-       | [H: ⟨ _ ⊢ _ : arr _ _ ↝ _ ∷ _ ⟩ |- _] =>
-         inversion H; clear H
-       | [H: ⟨ _ ⊢ _ : arr _ _ ↝* _ ∷ _ ⟩ |- _] =>
-         eapply arr_consistency in H
-       | [H: ⟨ _ ⊢ _ : arrτ _ _ ↝* _ ∷ _ ⟩ |- _] =>
-         eapply arrτ_consistency in H
-       | [H: ⟨ _ ⊢ _ : arrγ _ _ _ _ ↝* _ ∷ _ ⟩ |- _] =>
-         eapply arrγ_consistency in H
-     end; crush); eauto 20 with ws.
-
 Lemma can_form_tarr' {t σ} (v: Value t) (wt: ⟨ nil ⊢ t : σ ⟩) :
   ∀ γ τ1 τ2,
     ⟨ nil ⊢ γ : σ ~ arr τ1 τ2 ∷ kstar ⟩ →
@@ -48,13 +33,13 @@ Lemma can_form_tarr' {t σ} (v: Value t) (wt: ⟨ nil ⊢ t : σ ⟩) :
     (∃ t' η τ1', t = cast (abs τ1' t') η).
 Proof.
   depind wt; crush.
-  - canForm.
-  - canForm.
+  - consistency.
+  - consistency.
   - inversion wt; clear wt; crush.
     + pose proof (CoTrans nil H H0).
-      canForm.
+      consistency.
     + pose proof (CoTrans nil H H0).
-      canForm.
+      consistency.
 Qed.
 
 Lemma can_form_arr {t σ1 σ2} (v: Value t) (wt: ⟨ nil ⊢ t : arr σ1 σ2 ⟩) :
@@ -73,16 +58,16 @@ Lemma can_form_arrτ' {t σ} (v: Value t) (wt: ⟨ nil ⊢ t : σ ⟩) :
     (∃ t' η, t = cast (absτ k t') η).
 Proof.
   depind wt; crush.
-  - canForm.
-  - canForm.
-  - canForm.
+  - consistency.
+  - consistency.
+  - consistency.
   - inversion wt; clear wt; crush.
     + pose proof (CoTrans nil H H0).
-      canForm.
+      consistency.
     + pose proof (CoTrans nil H H0).
-      canForm.
+      consistency.
     + pose proof (CoTrans nil H H0).
-      canForm.
+      consistency.
 Qed.
 
 Lemma can_form_arrτ {t k σ} (v: Value t) (wt: ⟨ nil ⊢ t : arrτ k σ ⟩) :
@@ -102,16 +87,16 @@ Lemma can_form_arrγ' {t σ} (v: Value t) (wt: ⟨ nil ⊢ t : σ ⟩) :
     (∃ t' η τ1' τ2', t = cast (absγ τ1' τ2' k t') η).
 Proof.
   depind wt; crush.
-  - canForm.
-  - canForm.
-  - canForm.
+  - consistency.
+  - consistency.
+  - consistency.
   - inversion wt; clear wt; crush.
     + pose proof (CoTrans nil H H0).
-      canForm.
+      consistency.
     + pose proof (CoTrans nil H H0).
-      canForm.
+      consistency.
     + pose proof (CoTrans nil H H0).
-      canForm.
+      consistency.
 Qed.
 
 Lemma can_form_arrγ {t σ1 σ2 k σ3} (v: Value t) (wt: ⟨ nil ⊢ t : arrγ σ1 σ2 k σ3 ⟩) :
@@ -141,5 +126,8 @@ Lemma progress {t σ} (wt: ⟨ nil ⊢ t : σ ⟩) :
   Value t ∨ ∃ t', t --> t'.
 Proof with destruct_conjs; subst*; eauto using eval.
   depind wt; intuition; crush; repeat progressMatch; crush; eauto using eval.
+  - eexists; eapply eval_push_app_cast; crush.
+  - eexists; eapply eval_push_appτ_cast; crush.
+  - eexists; eapply eval_push_appγ_cast; crush.
   - inversion wt; crush; eauto using eval.
 Qed.

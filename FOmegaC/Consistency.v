@@ -45,12 +45,6 @@ Ltac crushIH :=
           specialize (IH clΓ); clear clΓ
     end.
 
-(* Record Consistent (Γ : Env) : Prop := *)
-(*   { arr_cons : ∀ {c τ1 τ2 σ}, *)
-(*                  ⟨ c : arr τ1 τ2 ~ σ ∷ kstar ∈ Γ ⟩ → *)
-(*                  ∃ σ1 σ2, σ = arr σ1 σ2 *)
-(*   }. *)
-
 Local Ltac crush :=
   intros;
   crushIH;
@@ -331,17 +325,6 @@ Proof.
 Qed.
 Hint Resolve wtRedSub_beta1 : ws.
 
-(* Lemma wtredsub_beta1 {Γ k γ σ τ} (wγ: ⟨ Γ ⊢ γ : σ ↝ τ ∷ k ⟩) : *)
-(*   WtRedSub (Γ ► k) Γ (coidm · γ) (beta1 σ) (beta1 τ). *)
-(* Proof. *)
-(*   unfold beta1, beta. *)
-(*   simpl snoc. *)
-(*   apply wtredsub_snoc; eauto. *)
-(*   admit. *)
-(*   admit. *)
-(*   c *)
-(* Admitted. *)
-
 (* Takahashi's complete developments adapted to coercions. *)
 Fixpoint complete_ty (τ : Exp) : Exp :=
   match τ with
@@ -354,26 +337,6 @@ Fixpoint complete_ty (τ : Exp) : Exp :=
     | arrγ τ1 τ2 k τ3     => arrγ (complete_ty τ1) (complete_ty τ2) k (complete_ty τ3)
     | _                   => τ
   end.
-
-(* Definition ren_complete_ty τ : *)
-(*   ∀ (ξ: Sub Ix), complete_ty τ[ξ] = (complete_ty τ)[ξ]. *)
-(* Proof. *)
-(*   enough *)
-(*     ((∀ (ξ: Sub Ix), *)
-(*         complete_ty τ[ξ] = (complete_ty τ)[ξ]) ∧ *)
-(*      (∀ (τ2 : Exp) (ξ : Sub Ix), *)
-(*         complete_ty τ2[ξ] = (complete_ty τ2)[ξ] → *)
-(*         complete_ty (τapp τ τ2)[ξ] = (complete_ty (τapp τ τ2))[ξ])) as []; auto. *)
-(*   induction τ; split; try (crush; intuition; crush; fail). *)
-(*   intros; cbn. *)
-(*   destruct IHτ. *)
-(*   repeat crushSyntaxRefold. *)
-(*   rewrite H0, H. *)
-(*   rewrite <- ?ap_liftSub. *)
-(*   rewrite apply_beta1_comm. *)
-(*   rewrite up_liftSub. *)
-(*   reflexivity. *)
-(* Qed. *)
 
 Fixpoint complete_ty_co (τ: Exp) : Exp :=
   match τ with
@@ -607,70 +570,17 @@ Proof.
       eapply RsTrans; crush.
 Qed.
 
-
-
-
-(* Lemma red_ren {Γ γ τ1 τ2 k} (wγ: ⟨ Γ ⊢ γ : τ1 ↝ τ2 ∷ k ⟩) : *)
-(*   ∀ Δ ζ, ⟨ ζ : Γ -> Δ ⟩ → ⟨ Δ ⊢ γ[ζ] : τ1[ζ] ↝ τ2[ζ] ∷ k ⟩. *)
-(* Proof. *)
-(*   induction wγ; intros ? ζ wζ; crush. *)
-(*   - rewrite <- ?ap_liftSub. *)
-(*     rewrite ?apply_beta1_comm. *)
-(*     rewrite ?up_liftSub. *)
-(*     rewrite ?ap_liftSub. *)
-(*     econstructor; eauto with ws. *)
-(*   - rewrite <- ?ap_liftSub. *)
-(*     rewrite ?apply_beta1_comm. *)
-(*     rewrite ?up_liftSub. *)
-(*     rewrite ?ap_liftSub. *)
-(*     econstructor; eauto with ws. *)
-(* Qed. *)
-(* Hint Resolve co_ren : ws. *)
-
-(* Record WtRedSub (Γ Δ: Env) (ζγ ζγi ζ1 ζ2: Sub Exp) : Prop := *)
-(*   { wrs_tyvar : ∀ {α k}, *)
-(*                   ⟨ α ∷ k ∈ Γ ⟩ → *)
-(*                   ⟨ Δ ⊢ ζγ α : ζ1 α ↝ ζ2 α ∷ k ⟩; *)
-(*     wrs_covar : ∀ {c τ1 τ2 k}, *)
-(*                   ⟨ c : τ1 ~ τ2 ∷ k ∈ Γ ⟩ → *)
-(*                   ⟨ Δ ⊢ ζγ c : τ1[ζ1] ↝ τ2[ζ2] ∷ k ⟩; *)
-(*     wrs_tyvari : ∀ {α k}, *)
-(*                   ⟨ α ∷ k ∈ Γ ⟩ → *)
-(*                   ⟨ Δ ⊢ ζγi α : ζ2 α ↝ ζ1 α ∷ k ⟩; *)
-(*     wrs_covari : ∀ {c τ1 τ2 k}, *)
-(*                   ⟨ c : τ1 ~ τ2 ∷ k ∈ Γ ⟩ → *)
-(*                   ⟨ Δ ⊢ ζγi c : τ1[ζ2] ↝ τ2[ζ1] ∷ k ⟩; *)
-(*     wrs_left :> ⟨ ζ1 : Γ => Δ ⟩; *)
-(*     wrs_right :> ⟨ ζ2 : Γ => Δ ⟩; *)
-(*   }. *)
-
-(* Hint Resolve wrs_covar : ws. *)
-(* Hint Resolve wrs_tyvari : ws. *)
-(* Hint Resolve wrs_covari : ws. *)
-(* Hint Resolve wrs_left : ws. *)
-(* Hint Resolve wrs_right : ws. *)
-(* Hint Constructors Red : ws. *)
-
-(* Lemma wtRedSub_up_tyvar {Γ Δ ζγ ζγi ζ1 ζ2} (wζ: WtRedSub Γ Δ ζγ ζγi ζ1 ζ2) : *)
-(*   ∀ k, WtRedSub (Γ ► k) (Δ ► k) (upRedSub ζγ) (upRedSub ζγi) ζ1↑ ζ2↑. *)
-(* Proof. *)
-(*   rewrite ?up_def. *)
-(*   constructor; intros. *)
-(*   - inversion H; clear H; crush. *)
-(*   - inversion H; clear H; crush. *)
-(*     rewrite ?ap_comp. *)
-(*     rewrite ?wkm_snoc_cancel. *)
-(*     rewrite <- ?ap_comp. *)
-(*     rewrite <- ?(ap_wkm_ix (X:=Exp)). *)
-(*     crush. *)
-(*   - inversion H; clear H; crush. *)
-(*   - inversion H; clear H; crush. *)
-(*     rewrite ?ap_comp. *)
-(*     rewrite ?wkm_snoc_cancel. *)
-(*     rewrite <- ?ap_comp. *)
-(*     rewrite <- ?(ap_wkm_ix (X:=Exp)). *)
-(*     crush. *)
-(*   - rewrite <- ?up_def; crush. *)
-(*   - rewrite <- ?up_def; crush. *)
-(* Qed. *)
-(* Hint Resolve wtCoSub_up_tyvar : ws. *)
+Ltac consistency :=
+  repeat
+    (match goal with
+       | [H: ⟨ _ ⊢ _ : _ ~ _ ∷ _ ⟩ |- _] =>
+         eapply co_red in H
+       | [H: ⟨ _ ⊢ _ : arr _ _ ↝ _ ∷ _ ⟩ |- _] =>
+         inversion H; clear H
+       | [H: ⟨ _ ⊢ _ : arr _ _ ↝* _ ∷ _ ⟩ |- _] =>
+         eapply arr_consistency in H
+       | [H: ⟨ _ ⊢ _ : arrτ _ _ ↝* _ ∷ _ ⟩ |- _] =>
+         eapply arrτ_consistency in H
+       | [H: ⟨ _ ⊢ _ : arrγ _ _ _ _ ↝* _ ∷ _ ⟩ |- _] =>
+         eapply arrγ_consistency in H
+     end; crush); eauto 20 with ws.
